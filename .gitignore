@@ -1,0 +1,12 @@
+Trash/
+telepathy
+review/for-review
+*__pycache__*
+*.jl
+*.csv
+*.json
+*.jsonl
+*.m4a
+scrapers/logs
+scrapers/data
+tree.html
