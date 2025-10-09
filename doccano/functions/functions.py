@@ -39,7 +39,7 @@ class Doccano_Functions:
             if keywords:  # keep schema consistent if keywords were requested
                 empty_cols.append('matched keywords')
             self.save_data(pd.DataFrame(columns=empty_cols))
-            return data
+            return df
 
         # Keywords matching
         df = self.match_on_keywords(df, keywords)
@@ -47,7 +47,7 @@ class Doccano_Functions:
         # Saves data to jsonlines
         self.save_data(df)
 
-        return data
+        return df
 
     def extract_info_from_input_file_path(self, input_file_path: str):
         ''' Extracts the country and source from the path of the input file, and adds the source to the dataframe.

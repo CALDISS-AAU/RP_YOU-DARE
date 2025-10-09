@@ -11,3 +11,5 @@ scrapers/logs
 scrapers/data
 tree.html
 doccano/data
+*.ipynb_checkpo*
+environment
