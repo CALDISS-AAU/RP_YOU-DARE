@@ -5,15 +5,18 @@ import re
 import os
 import numpy as np
 import traceback
-
-
+import pathlib
 
 class Doccano_Functions:
     def __init__(self):
         self.country = None
         self.source = None
+        self.method = None
 
-    def prepare_data_for_doccano(self, input_file_path: str, from_date=None, to_date=None, exclude_empty_dates=False, keywords=[]):
+    def prepare_data_for_doccano(self, input_file_path: str, from_date=None, to_date=None, exclude_empty_dates=False, keywords=None):
+        if keywords is None:
+            keywords = []
+
         # Prepares data #
         self.extract_info_from_input_file_path(input_file_path) # Extracts country and source from the input file path and saves these as instance variables
         data = self.import_data(input_file_path) # Imports the data on the input file path
@@ -23,16 +26,23 @@ class Doccano_Functions:
 
         # Dataframe setup and preparation #
         df = self.select_and_clean_relevant_columns(data) # Only include relevant and cleaned columns in the dataframe
-        df['source'] = self.source  # Append source_platform as a column
 
         # Publication date fiddeling - standadising and filtering
         df = self.normalise_publication_dates(df)  # Normalise dates after cleaning
         if from_date or to_date:
             df = self.filter_dates(df, from_date, to_date, exclude_empty_dates)
 
+        # --- Exit early if date filter yields zero rows ---
+        if df.empty:
+            print("No rows after date filtering; writing empty dataset.")
+            empty_cols = ['text', 'link', 'source', 'publication date']
+            if keywords:  # keep schema consistent if keywords were requested
+                empty_cols.append('matched keywords')
+            self.save_data(pd.DataFrame(columns=empty_cols))
+            return data
+
         # Keywords matching
-        if keywords:
-            df = self.match_on_keywords(df, keywords)
+        df = self.match_on_keywords(df, keywords)
 
         # Saves data to jsonlines
         self.save_data(df)
@@ -44,25 +54,25 @@ class Doccano_Functions:
             Needs a path on the form:
                 /work/YOU-DARE/scrapers/data/country/source_platform/...
         ''' 
-        parts = input_file_path.strip('/').split('/') # Splits the path
+        parts = input_file_path.strip('/').split('/')
         try:
-            self.country = parts[4] # Assigns the 5th element to the instance variable 'country'
-            source_and_method = parts[5] 
-            source_parts = source_and_method.split('_') # Splits the 6th element at '_'
-            method = source_parts[-1] # Assigns the last element of the source to 'method'
-            raw_source = '_'.join(source_parts[:-1]) # Joins the rest of the source back together
+            self.country = parts[4]  # 5th element is the country
+            
+            p = pathlib.Path(input_file_path)
+            source_and_method = p.stem  # 'data_motstandsrorelsen_SPIDER'
+            
+            source_parts = source_and_method.split('_')
+            method = source_parts[-1]  # 'SPIDER'
 
-            # Assigns relevant platforms to the used method
             platform_map = {
                 'YT': 'YouTube',
                 'SPIDER': 'website',
                 'MANUAL': 'website',
                 'TELEGRAM': 'telegram'
             }
-            platform = platform_map.get(method.upper(), 'unknown')
-            self.source = f"{raw_source}_{platform}" # Combines the original source excluding the method with the relevant plantform and assigns it to the instance variable 'source'
+            self.method = platform_map.get(method.upper(), 'unknown')
 
-            print(f"Metadata extracted — Country: {self.country}, Source: {self.source}")
+            print(f"Metadata extracted — Country: {self.country}")
         except IndexError as e:
             print(f"Invalid input path format: {input_file_path}. Error: {e}")
 
@@ -91,17 +101,25 @@ class Doccano_Functions:
 
         # Relevant columns for Doccano
         relevant_columns = [
-            'publication_date',
-            'article_text',
-            'video_text',
-            'article_link',
-            'video_link',
-            'article_title',
-            'video_title', 
-            'article_sub_title',
-            'Message_text',
-            'Timestamp',
-            'URL'
+            'article_text', # Spider
+            'video_text', # YouTube
+            'Message_text', # Telegram
+            'Thread_text', # Merged telegram
+            'thread_text', # Spider forum
+            'article_sub_title', # Spider
+            'video_sub_title', # YouTube
+            'article_link', # Spider
+            'video_link', # Youtube
+            'post_link', # Spider forum
+            'URL', # Telegram (all)
+            'article_title', # Spider
+            'video_title', # YouTube
+            'post_title', # Spider forum
+            'publication_date', # Everything but telegram
+            'Timestamp', # Telegram
+            'source', # Everything but telegram
+            'Source', # Telegram
+            'Display_name', # Telegram
         ]
 
         # From the full list, keep only the columns that are actually present in the input data
@@ -115,23 +133,42 @@ class Doccano_Functions:
 
         # Rename columns to standard format
         rename_map = {
-            'article_text': 'text',
-            'video_text' : 'text',
-            'Message_text' : 'text',
-            'article_sub_title': 'sub_title',
-            'video_sub_title': 'sub_title',
-            'article_link': 'link',
-            'video_link': 'link',
-            'URL': 'link',
-            'article_title': 'title',
-            'video_title': 'title',
-            'publication_date': 'publication date',
-            'Timestamp': 'publication date'
+            'article_text': 'text', # Websites / manual
+            'video_text': 'text', # YouTube
+            'Message_text': 'text', # Telegram posts
+            'Thread_text': 'text', # Telegram combined
+            'thread_text': 'text', # Forum
+            'article_sub_title': 'sub_title', # Websites / manual
+            'video_sub_title': 'sub_title', # YouTube
+            'article_link': 'link', # Websites / manual
+            'video_link': 'link', # YouTube
+            'post_link': 'link', # Forum
+            'URL': 'link', # Telegram
+            'article_title': 'title', # Websites / manual
+            'video_title': 'title', # YouTube 
+            'post_title': 'title', # Forum
+            'publication_date': 'publication date', # Websites / manual / YouTube
+            'Timestamp': 'publication date', # Telegram
+            'source': 'source', # Websites / manual / YouTube
+            'Source': 'source', # Telegram
+            'Display_name': 'source' # Telegram
         }
 
         # Only rename columns that are actually present
         columns_to_rename = {k: v for k, v in rename_map.items() if k in df.columns}
         df.rename(columns=columns_to_rename, inplace=True)
+
+        if 'title' in df.columns: # Ensure title is always a single string rather than potentially a list
+            df['title'] = df['title'].apply(
+                lambda x: ' '.join(map(str, x)) if isinstance(x, list)
+                else ('' if pd.isna(x) else str(x))
+            )
+
+        if 'sub_title' in df.columns: # Ensure sub-title is always a single string rather than potentially a list
+            df['sub_title'] = df['sub_title'].apply(
+                lambda x: ' '.join(map(str, x)) if isinstance(x, list)
+                else ('' if pd.isna(x) else str(x))
+            )
 
         # Add title and subtitle to the beginning of the article text if 'text' exists
         if 'text' in df.columns: # Relevant in cases were no transcriptions has been matched to associated data rows
@@ -161,20 +198,29 @@ class Doccano_Functions:
             # If missing, add an empty column (to keep a consistent schema)
             df['publication date'] = None
 
+        # Assigns source to dataset for output_file_name
+        self.source = df['source'][0]
+
         # Return the cleaned-up, ready-for-export DataFrame
         return df
 
-    def normalise_publication_dates(self,df):
-        df['publication date'] = df['publication date'].apply(
-            lambda s: pd.NaT 
-                if pd.isna(s) # If no publication date then it stays NaN/null (pd.NaT)
-                else dateparser.parse(
-                    s, 
-                    settings={'RETURN_AS_TIMEZONE_AWARE': False} # Return a datetime.datetime without any timezones no matter the input
-                ) 
-            ) # publication date is now true datetime always
+    # def normalise_publication_dates(self,df):
+    #     df['publication date'] = df['publication date'].apply(
+    #         lambda s: pd.NaT 
+    #             if pd.isna(s) # If no publication date then it stays NaN/null (pd.NaT)
+    #             else dateparser.parse(
+    #                 s, 
+    #                 settings={'RETURN_AS_TIMEZONE_AWARE': False} # Return a datetime.datetime without any timezones no matter the input
+    #             ) 
+    #         ) # publication date is now true datetime always
 
-        # Format to yyyy-mm-dd
+    #     # Format to yyyy-mm-dd
+    #     df['publication date'] = df['publication date'].dt.strftime('%Y-%m-%d')
+    #     return df
+
+    def normalise_publication_dates(self, df):
+        df['publication date'] = df['publication date'].apply(lambda s: None if (pd.isna(s) or (isinstance(s, str) and s.strip()=='')) else dateparser.parse(s, settings={'RETURN_AS_TIMEZONE_AWARE': False}))
+        df['publication date'] = pd.to_datetime(df['publication date'], errors='coerce')
         df['publication date'] = df['publication date'].dt.strftime('%Y-%m-%d')
         return df
 
@@ -218,31 +264,115 @@ class Doccano_Functions:
         
         return df
         
+    # def match_on_keywords(self, df, keywords, text_column='text'):
+    #     df = df.copy()
+    #     if keywords:
+    #         keyword_regexes = [(kw, self.convert_to_regex(kw)) for kw in keywords]
+    #         matched_keywords = []
+    #         for text in df[text_column].fillna(''):
+    #             if self.method == "telegram": # TILFØJELSE
+    #                 text = '\n'.join([t[1] for t in re.findall(r'(Post_text|Comment_text)(.*?(?=---))', text, flags=re.DOTALL)]) # TILFØJELSE
+        
+    #             matches = set()
+    #             for original_kw, pattern in keyword_regexes:
+    #                 if re.search(pattern, text, flags=re.IGNORECASE):
+    #                     matches.add(original_kw)
+    #             matched_keywords.append(sorted(matches, key=str.lower))
+    #         # for text in df[text_column].fillna(''):
+    #         #     matches = set()
+    #         #     for original_kw, pattern in keyword_regexes:
+    #         #         if re.search(pattern, text, flags=re.IGNORECASE):
+    #         #             matches.add(original_kw)
+    #         #     matched_keywords.append(sorted(matches, key=str.lower))
+    #         df['matched keywords'] = matched_keywords
+    #         df = df[df['matched keywords'].map(len) > 0]  # keep only matched when keywords were provided
+            
+    #         # ✅ Early exit if nothing matched — don't try to build YAML
+    #         if df.empty:
+    #             print("No rows matched keywords; returning empty dataset.")
+    #             return df  # let caller handle saving; your outer guard will write an empty .jl
+
+    #         df['text'] = df.apply(self.build_yaml_keywords, axis=1)
+    #         return df
+    #     else:
+    #         # no keywords provided: keep all rows and build YAML without the "Matched keywords" line
+    #         df['text'] = df.apply(self.build_yaml, axis=1)
+    #         print("No keywords provided. Returning original DataFrame.")
+    #         return df
+
     def match_on_keywords(self, df, keywords, text_column='text'):
-        if len(keywords)==0:
+        df = df.copy()
+        if keywords:
+            keyword_regexes = [(kw, self.convert_to_regex(kw)) for kw in keywords]
+            matched_keywords = []
+
+            # iterate per row so we can mask the actor/source from the text before matching
+            for _, row in df.iterrows():
+                text = (row.get(text_column) or '')
+                if self.method == "telegram":  # TILFØJELSE
+                    text = '\n'.join([t[1] for t in re.findall(r'(Post_text|Comment_text)(.*?(?=---))', text, flags=re.DOTALL)]) or text  # TILFØJELSE
+
+                # --- mask actor/source so it can't trigger matches ---
+                actor = (row.get('source') or '').strip()
+                text_for_match = text
+                if actor:
+                    try:
+                        text_for_match = re.sub(re.escape(actor), ' ', text_for_match, flags=re.IGNORECASE)
+                    except re.error as e:
+                        print(f"Error masking actor '{actor}': {e}")
+
+                matches = set()
+                for original_kw, pattern in keyword_regexes:
+                    try:
+                        if re.search(pattern, text_for_match, flags=re.IGNORECASE):
+                            matches.add(original_kw)
+                    except re.error as e:
+                        print(f"Bad regex for keyword '{original_kw}': {e}")
+
+                matched_keywords.append(sorted(matches, key=str.lower))
+
+            df['matched keywords'] = matched_keywords
+            df = df[df['matched keywords'].map(len) > 0]  # keep only matched when keywords were provided
+
+            # ✅ Early exit if nothing matched — don't try to build YAML
+            if df.empty:
+                print("No rows matched keywords; returning empty dataset.")
+                return df  # let caller handle saving; your outer guard will write an empty .jl
+
+            df['text'] = df.apply(self.build_yaml_keywords, axis=1)
+            return df
+        else:
+            # no keywords provided: keep all rows and build YAML without the "Matched keywords" line
+            df['text'] = df.apply(self.build_yaml, axis=1)
             print("No keywords provided. Returning original DataFrame.")
             return df
 
-        # Convert wildcard patterns to regex
-        keyword_regexes = [(kw, self.convert_to_regex(kw)) for kw in keywords]
+
+    def build_yaml(self, row):
+        # Build the YAML header and attach to text
+        return (
+            f"---\n"
+            f"Link: {row['link']}\n"
+            f"Actor: {row['source']}\n"
+            f"Publication date: {row['publication date']}\n"
+            f"---\n"
+            f"{row['text']}"
+        )
+
+    def build_yaml_keywords(self, row):
+        # Join matched keywords into a comma-separated string
+        keyword_string = ', '.join(row['matched keywords'])
         
-        matched_keywords = []
-
-        if 'text' in df.columns:
-            for text in df[text_column].fillna(''):
-                matches = set()
-                for original_kw, pattern in keyword_regexes:
-                    if re.search(pattern, text, flags=re.IGNORECASE):
-                        matches.add(original_kw)
-                matched_keywords.append(sorted(matches, key=str.lower))
-
-            df = df.copy()
-            df['matched keywords'] = matched_keywords
-
-            # Keep only rows where at least one keyword matched
-            df = df[df['matched keywords'].map(len) > 0]
-
-        return df
+        # Build the YAML header and attach to text
+        return (
+            f"---\n"
+            f"Link: {row['link']}\n"
+            f"Actor: {row['source']}\n"
+            f"Matched keywords: {keyword_string}\n"
+            f"Publication date: {row['publication date']}\n"
+            f"---\n"
+            f"{row['text']}"
+        )
 
     def convert_to_regex(self, keyword):
         pattern = keyword.strip()
@@ -257,7 +387,7 @@ class Doccano_Functions:
 
     def save_data(self, df):
         output_dir = f'/work/YOU-DARE/doccano/data/{self.country}'
-        output_path = f'{output_dir}/data_{self.country}_{self.source}_anno.jl'
+        output_path = f'{output_dir}/data_{self.country}_{self.source}_{self.method}_anno.jl'
         os.makedirs(output_dir, exist_ok=True)
         try:
             df.to_json(output_path, orient='records', lines=True)
@@ -270,125 +400,57 @@ class Doccano_Functions:
         except Exception as e:
             print(f'Failed to save data. Error: {e}')
 
+    def get_all_dataset_paths(self, data_directory):
+        list_of_all_datasets = []
+        list_of_datasets_SPIDER = list(pathlib.Path(data_directory).rglob('*_SPIDER.jl'))
+        list_of_datasets_MANUAL = list(pathlib.Path(data_directory).rglob('*_MANUAL.jl'))
+        list_of_datasets_YT = list(pathlib.Path(data_directory).rglob('*_YT.jl'))
+        list_of_datasets_TELEGRAM = list(pathlib.Path(data_directory).rglob('*_TELEGRAM.jl'))
+        list_of_all_datasets = list_of_datasets_SPIDER + list_of_datasets_MANUAL + list_of_datasets_YT + list_of_datasets_TELEGRAM
+        list_of_all_datasets = list(map(str, list_of_all_datasets))
+        return list_of_all_datasets
 
-    # Continue from here...
+    ### FOR MULTIPLE DATE RANGES ###
+    def prepare_data_for_doccano_ranges(self, input_file_path: str, date_ranges, exclude_empty_dates=False, keywords=None):
+        if keywords is None: keywords = []
+        if not isinstance(date_ranges, (list, tuple)) or not date_ranges:
+            print("date_ranges must be a non-empty list/tuple of (from_date, to_date) pairs."); return None
+        self.extract_info_from_input_file_path(input_file_path)
+        data = self.import_data(input_file_path)
+        if not data: print("No data loaded."); return None
+        df = self.select_and_clean_relevant_columns(data)
+        df = self.normalise_publication_dates(df)
+        df = self.filter_dates_multi(df, date_ranges, exclude_empty_dates)
+        if df.empty:
+            print("No rows after date filtering; writing empty dataset.")
+            empty_cols = ['text','link','source','publication date']
+            if keywords: empty_cols.append('matched keywords')
+            self.save_data(pd.DataFrame(columns=empty_cols))
+            return data
+        df = self.match_on_keywords(df, keywords)
+        self.save_data(df)
+        return data
 
-class Transcriber_data_Functions:
-    def add_transcribed_text_to_video_data(self, dataset_path, transcriptions_dir):
-        """
-        Convenience function to:
-        1. Extract text from transcription files.
-        2. Merge with the videos dataset.
-        
-        Output is saved in the same folder as the videos dataset with a name
-        matching the folder name.
-
-        Args:
-            dataset_path (str): Full path to 'videos.jl'.
-            transcriptions_dir (str): Directory containing raw transcription .json files.
-        """
-        # Step 1: Create intermediate file path for extracted text
-        temp_transcript_path = os.path.join(transcriptions_dir, 'combined_text_dataset.jl')
-
-        # Step 2: Generate text dataset
-        self.make_text_dataset_from_transcriptions(transcriptions_dir, temp_transcript_path)
-
-        # Step 3: Merge with original dataset
-        self.merge_datasets_on_audio_name(dataset_path, temp_transcript_path)
-
-    def extract_text_from_jsonl(self, file_path):
-        all_texts = []
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                for line in f:
-                    data = json.loads(line)
-                    segments = data.get('segments', [])
-                    for segment in segments:
-                        text = segment.get('text')
-                        if text:
-                            all_texts.append(text)
-        except Exception as e:
-            print(f'Failed to load data from {input_file_path}. Error: {e}')
-            return []
-
-        full_text = ' '.join(all_texts)
-        return full_text
-
-    def make_text_dataset_from_transcriptions(self, transcriptions_dir, output_path):
-        """
-        Processes transcription JSON files in a directory and writes a JSONL file with
-        'file_name' (cleaned to match original metadata) and 'text' fields.
-        """
-        try:
-            with open(output_path, 'w', encoding='utf-8') as out_file:
-                for file_name in os.listdir(transcriptions_dir):
-                    if file_name.endswith('.json'):
-                        file_path = os.path.join(transcriptions_dir, file_name)
-                        full_text = self.extract_text_from_jsonl(file_path)
-
-                        # Clean the filename to strip model/language suffix
-                        cleaned_name = os.path.splitext(file_name)[0]
-
-                        out_file.write(json.dumps({
-                            'file_name': cleaned_name,
-                            'video_text': full_text
-                        }) + '\n')
-        except Exception as e:
-            print(f'Failed to process transcriptions from {transcriptions_dir}. Error: {e}')
-            return []
-    
-    def merge_datasets_on_audio_name(self, dataset_path, transcript_path):
-        """
-        Merges metadata and transcription datasets based on normalized audio file names,
-        and saves the result to a .jl file named after the dataset's parent folder.
-        """
-        try:
-            # Step 1: Load transcriptions into a normalized lookup dictionary
-            transcription_lookup = {}
-            with open(transcript_path, 'r', encoding='utf-8') as tf:
-                for line in tf:
-                    data = json.loads(line)
-                    key = data['file_name'].strip().lower()
-                    transcription_lookup[key] = data['video_text']
-
-            # Step 2: Merge with dataset entries
-            merged_data = []
-            unmatched_files = []
-            with open(dataset_path, 'r', encoding='utf-8') as df:
-                for line in df:
-                    entry = json.loads(line)
-                    raw_name = entry.get('video_id')
-                    normalized_name = raw_name.strip().lower() if raw_name else None
-
-                    if normalized_name and normalized_name in transcription_lookup:
-                        entry['video_text'] = transcription_lookup[normalized_name]
-                        # print(f"Matched: {raw_name}")
-                    else:
-                        unmatched_files.append(raw_name)
-                        # print(f"No match for: {raw_name}")
-
-                    merged_data.append(entry)
-
-            # Step 3: Determine output path
-            folder_path = os.path.dirname(dataset_path)
-            parent_folder_name = os.path.basename(folder_path)
-            output_path = os.path.join(folder_path, f'{parent_folder_name}.jl')
-
-            # Step 4: Write merged output
-            with open(output_path, 'w', encoding='utf-8') as out_file:
-                for item in merged_data:
-                    out_file.write(json.dumps(item) + '\n')
-
-            print(f'Merged file saved to: {output_path}')
-            if unmatched_files:
-                print(f"\nUnmatched entries: {len(unmatched_files)}")
-                for f in unmatched_files: # print's the name of all unmatched files
-                    print(f" - {f}")
-
-        except Exception as e:
-            print(f'Failed to merge datasets. Error: {e}\n\n\n')
-            
-
-
-
+    def filter_dates_multi(self, df, date_ranges, exclude_empty_dates):
+        """Union of inclusive ranges. Each item is (from_date, to_date); use None to open-end."""
+        df = df.copy()
+        df['publication date'] = pd.to_datetime(df['publication date'], format='%Y-%m-%d', errors='coerce')
+        if df.empty: return df
+        mask_any = pd.Series(False, index=df.index)
+        for rng in date_ranges:
+            if not isinstance(rng, (list, tuple)) or len(rng) != 2:
+                print(f"Skipping invalid date range: {rng}"); continue
+            f, t = rng
+            m = pd.Series(True, index=df.index)
+            if f: 
+                fdt = pd.to_datetime(f, errors='coerce')
+                if pd.notna(fdt): m &= (df['publication date'] >= fdt)
+            if t:
+                tdt = pd.to_datetime(t, errors='coerce')
+                if pd.notna(tdt): m &= (df['publication date'] <= tdt)
+            mask_any |= m
+        final_mask = mask_any if exclude_empty_dates else (mask_any | df['publication date'].isna())
+        df = df[final_mask].sort_values(by='publication date', ascending=False, na_position='last').copy()
+        df['publication date'] = df['publication date'].dt.strftime('%Y-%m-%d')
+        return df
     # Continue from here...
