@@ -4,10 +4,17 @@ import json
 import random
 from datetime import datetime
 from pathlib import Path
+from tqdm import tqdm
 
 def load_jsonlines(filepath):
     with open(filepath, 'r', encoding='utf-8') as f:
-        return [json.loads(line) for line in f]
+        lines_read = []
+        for c, line in tqdm(enumerate(f)):
+            line_read = json.loads(line)
+            line_read.pop("article_HTML", None) # omit article source code
+            lines_read.append(line_read)
+
+        return lines_read
 
 def save_jsonlines(filepath, data):
     with open(filepath, 'w', encoding='utf-8') as f:
