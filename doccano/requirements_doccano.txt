@@ -2,9 +2,4 @@ pandas
 numpy
 pysbd
 tqdm
-spacy
-transformers
-plotly==5.24.1
-sentence-transformers
-matplotlib
 dateparser

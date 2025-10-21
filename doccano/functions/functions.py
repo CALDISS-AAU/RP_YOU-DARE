@@ -13,9 +13,11 @@ class Doccano_Functions:
         self.source = None
         self.method = None
 
-    def prepare_data_for_doccano(self, input_file_path: str, from_date=None, to_date=None, exclude_empty_dates=False, keywords=None):
-        if keywords is None:
-            keywords = []
+    def prepare_data_for_doccano(self, input_file_path: str, from_date=None, to_date=None, exclude_empty_dates=False, keywords=None, keyword_pairs=None):
+        # if keywords is None:
+        #     keywords = []
+        # if keyword_pairs is None:
+        #     keyword_pairs = [[]]
 
         # Prepares data #
         self.extract_info_from_input_file_path(input_file_path) # Extracts country and source from the input file path and saves these as instance variables
@@ -42,7 +44,7 @@ class Doccano_Functions:
             return df
 
         # Keywords matching
-        df = self.match_on_keywords(df, keywords)
+        df = self.match_on_keywords(df, keywords, keyword_pairs)
 
         # Saves data to jsonlines
         self.save_data(df)
@@ -204,20 +206,6 @@ class Doccano_Functions:
         # Return the cleaned-up, ready-for-export DataFrame
         return df
 
-    # def normalise_publication_dates(self,df):
-    #     df['publication date'] = df['publication date'].apply(
-    #         lambda s: pd.NaT 
-    #             if pd.isna(s) # If no publication date then it stays NaN/null (pd.NaT)
-    #             else dateparser.parse(
-    #                 s, 
-    #                 settings={'RETURN_AS_TIMEZONE_AWARE': False} # Return a datetime.datetime without any timezones no matter the input
-    #             ) 
-    #         ) # publication date is now true datetime always
-
-    #     # Format to yyyy-mm-dd
-    #     df['publication date'] = df['publication date'].dt.strftime('%Y-%m-%d')
-    #     return df
-
     def normalise_publication_dates(self, df):
         df['publication date'] = df['publication date'].apply(lambda s: None if (pd.isna(s) or (isinstance(s, str) and s.strip()=='')) else dateparser.parse(s, settings={'RETURN_AS_TIMEZONE_AWARE': False}))
         df['publication date'] = pd.to_datetime(df['publication date'], errors='coerce')
@@ -264,43 +252,7 @@ class Doccano_Functions:
         
         return df
         
-    # def match_on_keywords(self, df, keywords, text_column='text'):
-    #     df = df.copy()
-    #     if keywords:
-    #         keyword_regexes = [(kw, self.convert_to_regex(kw)) for kw in keywords]
-    #         matched_keywords = []
-    #         for text in df[text_column].fillna(''):
-    #             if self.method == "telegram": # TILFØJELSE
-    #                 text = '\n'.join([t[1] for t in re.findall(r'(Post_text|Comment_text)(.*?(?=---))', text, flags=re.DOTALL)]) # TILFØJELSE
-        
-    #             matches = set()
-    #             for original_kw, pattern in keyword_regexes:
-    #                 if re.search(pattern, text, flags=re.IGNORECASE):
-    #                     matches.add(original_kw)
-    #             matched_keywords.append(sorted(matches, key=str.lower))
-    #         # for text in df[text_column].fillna(''):
-    #         #     matches = set()
-    #         #     for original_kw, pattern in keyword_regexes:
-    #         #         if re.search(pattern, text, flags=re.IGNORECASE):
-    #         #             matches.add(original_kw)
-    #         #     matched_keywords.append(sorted(matches, key=str.lower))
-    #         df['matched keywords'] = matched_keywords
-    #         df = df[df['matched keywords'].map(len) > 0]  # keep only matched when keywords were provided
-            
-    #         # ✅ Early exit if nothing matched — don't try to build YAML
-    #         if df.empty:
-    #             print("No rows matched keywords; returning empty dataset.")
-    #             return df  # let caller handle saving; your outer guard will write an empty .jl
-
-    #         df['text'] = df.apply(self.build_yaml_keywords, axis=1)
-    #         return df
-    #     else:
-    #         # no keywords provided: keep all rows and build YAML without the "Matched keywords" line
-    #         df['text'] = df.apply(self.build_yaml, axis=1)
-    #         print("No keywords provided. Returning original DataFrame.")
-    #         return df
-
-    def match_on_keywords(self, df, keywords, text_column='text'):
+    def match_on_keywords(self, df, keywords, keyword_pairs, text_column='text'):
         df = df.copy()
         if keywords:
             keyword_regexes = [(kw, self.convert_to_regex(kw)) for kw in keywords]
@@ -331,6 +283,10 @@ class Doccano_Functions:
 
                 matched_keywords.append(sorted(matches, key=str.lower))
 
+                ## Insert functionality to remove keywords from pairs if not both (or more) keywords are present ##
+                if keyword_pairs:
+                    matched_keywords = self.check_keyword_pairs(keyword_pairs, matched_keywords)
+
             df['matched keywords'] = matched_keywords
             df = df[df['matched keywords'].map(len) > 0]  # keep only matched when keywords were provided
 
@@ -347,6 +303,51 @@ class Doccano_Functions:
             print("No keywords provided. Returning original DataFrame.")
             return df
 
+    def check_keyword_pairs(self, keyword_pairs, matched_keywords_list):
+        ''' keyword_pairs : list of lists
+            only keep words from keyword pairs in matched keywords if all words are present
+        '''
+        # for row in matched_keywords_list: # matched_keywords_list = list of list, row = list for specific observation
+        #     unmatched_pair_words = set()
+        #     matched_pairs = []
+        #     if len(row) >=1: # Only look at non empty rows
+        #         print(f'All matched keywords for this row: {row}')
+        #         for pair in keyword_pairs: # keyword_pairs = list of list, pair = list
+        #             if not set(pair).issubset(row):
+        #                 for word in pair:
+        #                     if word in row:
+        #                         unmatched_pair_words.add(word)
+        #             else:
+        #                 matched_pairs.append(pair)
+        #         print(f'unmatched words: {unmatched_pair_words}, matched pairs: {matched_pairs}')
+        #         for word in list(unmatched_pair_words):
+        #             row.remove(word)
+        #         for pair in matched_pairs:
+        #             if not set(pair).issubset(row):
+        #                 row.append(pair)
+
+        # Adds words from keyword pairs back into matched_keywords as single words rather than pairs
+        for row in matched_keywords_list:
+            unmatched_pair_words = set()
+            matched_pair_words = set()
+            if len(row) >=1:
+                # print(row)
+                for pair in keyword_pairs:
+                    if not set(pair).issubset(row):
+                        for word in pair:
+                            if word in row:
+                                unmatched_pair_words.add(word)
+                    else:
+                        for word in pair:
+                            matched_pair_words.add(word)
+                # print(f'unmatched words: {unmatched_pair_words}, matched pairs: {matched_pair_words}')
+                for word in list(unmatched_pair_words):
+                    row.remove(word)
+                for word in list(matched_pair_words):
+                    if word not in row:
+                        row.append(word)
+        
+        return matched_keywords_list 
 
     def build_yaml(self, row):
         # Build the YAML header and attach to text
