@@ -1,0 +1,3 @@
+[submodule "scrapers"]
+	path = scrapers
+	url = https://github.com/CALDISS-AAU/YOU-DARE_scrapers.git

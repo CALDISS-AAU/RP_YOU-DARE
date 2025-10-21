@@ -8,6 +8,7 @@ review/for-review
 *.m4a
 scrapers/logs
 scrapers/data
+scrapers_OLD
 tree.html
 doccano/data
 *.ipynb_checkpo*
