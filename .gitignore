@@ -4,7 +4,6 @@ review/for-review
 *__pycache__*
 *.jl
 *.csv
-*.json
 *.jsonl
 *.m4a
 scrapers/logs
@@ -13,3 +12,10 @@ tree.html
 doccano/data
 *.ipynb_checkpo*
 environment
+datafun
+Spain_datadump
+doccano/pilotdata
+po-token
+doccano_OLD/data
+ffmpeg*
+_-E4ttc-gJs.json
