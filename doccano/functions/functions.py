@@ -13,7 +13,7 @@ class Doccano_Functions:
         self.source = None
         self.method = None
 
-    def prepare_data_for_doccano(self, input_file_path: str, from_date=None, to_date=None, exclude_empty_dates=False, keywords=None, keyword_pairs=None):
+    def prepare_data_for_doccano(self, input_file_path: str, from_date=None, to_date=None, exclude_empty_dates=False, keywords=None, keyword_pairs=None, save_data=True):
         # if keywords is None:
         #     keywords = []
         # if keyword_pairs is None:
@@ -40,14 +40,16 @@ class Doccano_Functions:
             empty_cols = ['text', 'link', 'source', 'publication date']
             if keywords:  # keep schema consistent if keywords were requested
                 empty_cols.append('matched keywords')
-            self.save_data(pd.DataFrame(columns=empty_cols))
+            if save_data:
+                self.save_data(pd.DataFrame(columns=empty_cols))
             return df
 
         # Keywords matching
         df = self.match_on_keywords(df, keywords, keyword_pairs)
 
         # Saves data to jsonlines
-        self.save_data(df)
+        if save_data:
+            self.save_data(df)
 
         return df
 
@@ -416,7 +418,7 @@ class Doccano_Functions:
         return list_of_all_datasets
 
     ### FOR MULTIPLE DATE RANGES ###
-    def prepare_data_for_doccano_ranges(self, input_file_path: str, date_ranges, exclude_empty_dates=False, keywords=None):
+    def prepare_data_for_doccano_ranges(self, input_file_path: str, date_ranges, exclude_empty_dates=False, keywords=None, save_data=True):
         if keywords is None: keywords = []
         if not isinstance(date_ranges, (list, tuple)) or not date_ranges:
             print("date_ranges must be a non-empty list/tuple of (from_date, to_date) pairs."); return None
@@ -430,10 +432,12 @@ class Doccano_Functions:
             print("No rows after date filtering; writing empty dataset.")
             empty_cols = ['text','link','source','publication date']
             if keywords: empty_cols.append('matched keywords')
-            self.save_data(pd.DataFrame(columns=empty_cols))
+            if save_data:
+                self.save_data(pd.DataFrame(columns=empty_cols))
             return data
         df = self.match_on_keywords(df, keywords)
-        self.save_data(df)
+        if save_data:
+            self.save_data(df)
         return data
 
     def filter_dates_multi(self, df, date_ranges, exclude_empty_dates):
