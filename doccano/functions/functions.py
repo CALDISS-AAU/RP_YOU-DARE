@@ -386,9 +386,13 @@ class Doccano_Functions:
         else:
             return r'\s' + re.escape(pattern) + r'(\s|\.|\,)'
 
-    def save_data(self, df):
+    def save_data(self, df, custom_suffix=None):
         output_dir = f'/work/YOU-DARE/doccano/data/{self.country}'
-        output_path = f'{output_dir}/data_{self.country}_{self.source}_{self.method}_anno.jl'
+
+        if custom_suffix:
+            output_path = f'{output_dir}/data_{self.country}_{self.source}_{self.method}_{custom_suffix}_anno.jl'
+        else:
+            output_path = f'{output_dir}/data_{self.country}_{self.source}_{self.method}_anno.jl'
         os.makedirs(output_dir, exist_ok=True)
         try:
             df.to_json(output_path, orient='records', lines=True)
