@@ -1,4 +1,4 @@
-"""Run anomaly detection on the simulated incidence data."""
+"""Run anomaly detection on trend data."""
 
 from __future__ import annotations
 
@@ -9,11 +9,12 @@ import warnings
 
 import numpy as np
 import json
+import re
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
 
-from modules.anomaly_detection import AnomalyConfig, aggregate_counts, detect_anomalies, fix_telegram_source
+from modules.anomaly_detection import AnomalyConfig, find_peaks, simple_peak_plot
 
 # SET SETTINGS FOR ANOMALY DETECTION HERE
 CONFIG_USE=AnomalyConfig(
@@ -32,153 +33,159 @@ AGG_FREQ_USE = "ME"
 # PATH TO REDUCED DATA (for weights)
 REDUCED_DATA_DIR = Path("/work/YOU-DARE/sentence_filtering/reduced_data")
 
+# function for processing
+def process_data():
+    # TODO: function for processing single dataset (path input) - possibly move to modules
+    return
+
 # main function
-def main(CONFIG_USE=CONFIG_USE, AGG_FREQ=AGG_FREQ_USE):
+def main(CONFIG_USE=CONFIG_USE, AGG_FREQ=AGG_FREQ_USE, REDUCED_DATA_DIR=REDUCED_DATA_DIR):
+
+    # TODO: Add function for visualize actors individually
 
     parser = argparse.ArgumentParser(description="Run anomaly detection.")
-    parser.add_argument(
+    datainput_group = parser.add_mutually_exclusive_group(required=False)
+    datainput_group.add_argument(
         "--data-path",
         help="Path to input JSONL with one row per instance.",
+    )
+    datainput_group.add_argument(
+        "--data-dir", 
+        default="/work/YOU-DARE/sentence_filtering/indexed_data",
+        help="Path to input directory with JSONL files."
     )
     parser.add_argument(
         "--use-weights",
         action="store_true",
         help="Apply source weights to counts"
         )
+    parser.add_argument(
+        "--output-dir-peaks",
+        default="/work/YOU-DARE/controversy-mapping/trend-analysis/output/peaks",
+        help="Directory for storing jsonlines with peaks"
+    )
+    parser.add_argument(
+        "--output-dir-vis",
+        default="/work/YOU-DARE/controversy-mapping/trend-analysis/output/packages_for_researchers",
+        help="Directory for visualization (data packages for researchers)"
+    )
 
     args = parser.parse_args()
 
-    data_path = Path(args.data_path)
+    
     USE_WEIGHTS = args.use_weights
 
-    # Derive country and theme from data_path
-    path_elems = data_path.stem.split('_')
-    country = path_elems[0]
-    if len(path_elems)>1:
-        theme = path_elems[1]
+    if args.data_path:
+        # use path
 
-    # read data
-    with open(data_path, "r") as f:
-        lines = f.read().splitlines()
-    
-    data_records = [json.loads(line) for line in lines]
-    df = pd.DataFrame(data_records)
-
-    # read reduced data (for weights)
-    if USE_WEIGHTS:
-        reduced_data_path = REDUCED_DATA_DIR / f"{country}_reduced.jl"
-
-        try:
-            with open(reduced_data_path, "r") as f:
-                lines = f.read().splitlines()
+        # find peaks
+        results, flagged, USE_WEIGHTS = find_peaks(
+            data_path=args.data_path, 
+            output_dir_peaks=args.output_dir_peaks,
+            year_cutoff_start=2015,
+            REDUCED_DATA_DIR=REDUCED_DATA_DIR,
+            CONFIG_USE=CONFIG_USE, 
+            AGG_FREQ=AGG_FREQ_USE, 
+            USE_WEIGHTS=USE_WEIGHTS
+            )
         
-            data_records = [json.loads(line) for line in lines]
-            reduced_df = pd.DataFrame(data_records)
+        # simple plot
+        simple_peak_plot(
+            results=results,
+            flagged=flagged,
+            output_dir_vis=args.output_dir_vis,
+            data_path=args.data_path,
+            AGG_FREQ=AGG_FREQ,
+            USE_WEIGHTS=USE_WEIGHTS
+        )
 
-            ### TEMP FIX OF SOURCE
-            reduced_df = fix_telegram_source(reduced_df)
+        
+    elif args.data_dir:
+        # use dir
+        expected_file_pattern = re.compile(r'\w{2,3}_\w+_indexed\.jl', re.IGNORECASE)
+
+        root_data_dir = Path(args.data_dir)
+
+        # data files in dir
+        jl_files = list(root_data_dir.rglob("*.jl"))
+
+        # eligible data files
+        data_paths = [p for p in jl_files if expected_file_pattern.search(str(p.stem)+".jl")]
+
+        # print non-eligible
+        non_eligible = [str(p) for p in jl_files if p not in data_paths]
+        non_eligible_string = '\n'.join(non_eligible)
+        if len(non_eligible) > 0:
+            print(f"The following data files do not match pattern {{ctr}}_{{theme}}_indexed.jl:\n {non_eligible_string}")
+
+        # run peak detection on files
+        for data_path in data_paths:
+            # find peaks
+            results, flagged, USE_WEIGHTS = find_peaks(
+                data_path=data_path, 
+                output_dir_peaks=args.output_dir_peaks,
+                year_cutoff_start=2015,
+                REDUCED_DATA_DIR=REDUCED_DATA_DIR,
+                CONFIG_USE=CONFIG_USE, 
+                AGG_FREQ=AGG_FREQ_USE, 
+                USE_WEIGHTS=USE_WEIGHTS
+                )
             
-            # Calc weights
-            source_counts = reduced_df.groupby('source').size()
-            source_counts_logged = source_counts.apply(np.log)
-
-            source_weights = source_counts_logged / source_counts_logged.sum()
-
-            source_weights_df = pd.DataFrame(
-                {
-                    'source': source_weights.index,
-                    'source_weight': source_weights.reset_index(drop=True)
-                }
+            # simple plot
+            simple_peak_plot(
+                results=results,
+                flagged=flagged,
+                output_dir_vis=args.output_dir_vis,
+                data_path=data_path,
+                AGG_FREQ=AGG_FREQ,
+                USE_WEIGHTS=USE_WEIGHTS
             )
 
-            # Add weight
-            sources_in_data = reduced_df.loc[df['text_ID'].tolist(), 'source'].reset_index(drop=True)
+    
+    # plotly stuff
+    # TODO: @MKAP: Har ikke pillet ved selve plotly delen. Lige nu virker den kun, hvis man kører funktionen på enkeltfil, så der skal gøres et eller andet, så det kan gøre i samme loop som resten
+    if args.data_path:
+        outputdir_vis = Path(args.output_dir_vis)
 
-            df['source'] = sources_in_data
-            df_with_weight = pd.merge(df, source_weights_df, how='left', on='source')
+        # Derive country and theme from data_path
+        data_path = Path(args.data_path)
+        path_elems = data_path.stem.split('_')
+        country = path_elems[0]
+        try:
+            theme = path_elems[1]
+        except IndexError:
+            raise IndexError(f"Filename {data_path.stem} does not match expected pattern {{ctr}}_{{theme}}_matched.jl. No theme found")
 
-        except FileNotFoundError:
-            warnings.warn(f"Reduced data file {reduced_data_path} not found! Peak detection performed unweighted.")
-            USE_WEIGHTS=False
 
-    # aggregate by time frequency
-    agg_freq = AGG_FREQ
-    if USE_WEIGHTS:
-        df_agg = aggregate_counts(df_with_weight, freq=agg_freq, weighted=True)
-    else:
-        df_agg = aggregate_counts(df, freq=agg_freq, weighted=False)
+        if USE_WEIGHTS:
+            html_path = outputdir_vis / country / f"{theme}_peaks_plot_weighted.html"
+        else:
+            html_path = outputdir_vis / country / f"{theme}_peaks_plot.html"
 
-    # detect peaks
-    results = detect_anomalies(
-        df_agg,
-        config=CONFIG_USE,
-    )
+        # ensure directories
+        html_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # filter peaks
-    flagged = results[results["is_anomaly"]]
-
-    # set output path
-    if USE_WEIGHTS:
-        output_path = Path("output") / f"{data_path.stem}_weighted_peaks.jsonl"
-    else:
-        output_path = Path("output") / f"{data_path.stem}_peaks.jsonl"
-
-    # store as jsonl
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    flagged.to_json(output_path, orient="records", lines=True, index=False, date_format="iso")
-
-    # print to console
-    print(f"Detected {len(flagged)} anomalies.")
-    if not flagged.empty:
-        print(
-            flagged[["date", "count", "anomaly_score"]]
-            .head(10)
-            .to_string(index=False)
+        fig = px.line(results, x="date", y="count", title=(f'<b>Incidence Counts with Anomalies(freq={AGG_FREQ})<b>'))
+        fig.update_traces(
+        line=dict(color="#4C72B0"),
+        selector=dict(mode="lines")
         )
+        if not flagged.empty:
+            fig.add_scatter(
+                x=flagged["date"],
+                y=flagged["count"],
+                mode="markers",
+                name="Anomaly",
+                marker=dict(color="#992F87", size=10)
+            )
 
-    # simple plot
-    # TODO: Update or omit plotting functions (possibly doing that elsewhere)
-    if USE_WEIGHTS:
-        plot_path = Path("output") / f"{data_path.stem}_weighted_peaks_plot.png"
-        html_path = Path("output") / f"{data_path.stem}_weighted_plotly_peaks.html"
-    else:
-        plot_path = Path("output") / f"{data_path.stem}_peaks_plot.png"
-        html_path = Path("output") / f"{data_path.stem}_plotly_peaks.html"
+            fig.update_layout(
+                plot_bgcolor="#F5F7FA",
+                paper_bgcolor="#F5F7FA",
+                )
+        fig.write_html(html_path)
+        print(f"Saved html plot to {html_path}")
 
-    plt.figure(figsize=(12, 5))
-    plt.plot(results["date"], results["count"], color="steelblue", linewidth=1.5)
-    if not flagged.empty:
-        plt.scatter(
-            flagged["date"],
-            flagged["count"],
-            color="crimson",
-            s=35,
-            zorder=3,
-            label="Anomaly",
-        )
-    plt.title(f"Incidence Counts with Anomalies (freq={agg_freq})")
-    plt.xlabel("Date")
-    if USE_WEIGHTS:
-        plt.ylabel("Weighted count")
-    else:
-        plt.ylabel("Count")
-    if not flagged.empty:
-        plt.legend()
-    plt.tight_layout()
-    plt.savefig(plot_path, dpi=150)
-    print(f"Saved plot to {plot_path}")
-
-    fig = px.line(results, x="date", y="count", title=(f'Incidence Counts with Anomalies(freq={agg_freq})'))
-    fig.update_traces(line= dict(color="#992F87"))
-    if not flagged.empty:
-        fig.add_scatter(
-            x=flagged["date"],
-            y=flagged["count"],
-            mode="markers",
-            name="Anomaly",
-            marker=dict(color="#4C72B0", size=10)
-        )
-    fig.write_html(html_path)
-    print(f"Saved html plot to {html_path} and chewed some bubblegum")
+# run main
 if __name__ == "__main__":
     main()

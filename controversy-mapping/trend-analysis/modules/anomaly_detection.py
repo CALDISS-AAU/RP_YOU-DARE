@@ -1,15 +1,20 @@
 """
 Detection of peaks/thematic salience using isolation forest anomaly detection. 
-Code adjusted from Codes (OpenAI) output.
+Code adjusted from Codex (OpenAI) output.
 """
 
 from __future__ import annotations
 
+from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional, Union
+import warnings
 
+import numpy as np
+import json
 import re
 import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn.ensemble import IsolationForest
 
 
@@ -45,7 +50,7 @@ def fix_telegram_source(df):
     
     new_df.loc[filter_telegram_mask, 'source'] = new_df.loc[filter_telegram_mask, 'link'].apply(use_telegram_source)
 
-    return(new_df)
+    return new_df
 ###
 
 
@@ -150,3 +155,172 @@ def detect_anomalies(ts, date_col = "publication date", config: Optional[Anomaly
     result["is_anomaly"] = is_anomaly
 
     return result.reset_index()
+
+# Main peak detection function
+def find_peaks(
+    data_path, 
+    output_dir_peaks,
+    REDUCED_DATA_DIR,
+    CONFIG_USE, 
+    AGG_FREQ, 
+    USE_WEIGHTS,
+    year_cutoff_start=2015,
+    ):
+
+    # Paths
+    data_path = Path(data_path)
+    outputdir_peaks = Path(output_dir_peaks)
+
+    # Derive country and theme from data_path
+    path_elems = data_path.stem.split('_')
+    country = path_elems[0]
+    try:
+        theme = path_elems[1]
+    except IndexError:
+        raise IndexError(f"Filename {data_path.stem} does not match expected pattern {{ctr}}_{{theme}}_matched.jl. No theme found")
+
+    # read data
+    with open(data_path, "r") as f:
+        lines = f.read().splitlines()
+
+    data_records = [json.loads(line) for line in lines]
+    df = pd.DataFrame(data_records)
+
+    # cut-off date
+    if "publication date" not in df.columns: # check if date col is in data
+        raise ValueError(
+            f"Expected columns 'publication date' not in {list(df.columns)}"
+    )
+    df["publication date"] = pd.to_datetime(df["publication date"], format="%Y-%m-%d") # convert to datetime - expects YYYY-MM-DD
+
+    cutoff_date = pd.Timestamp(year=year_cutoff_start, month=1, day=1)
+
+    df = df[df["publication date"] >= cutoff_date]
+
+    # read reduced data (for weights and source)
+    reduced_data_path = REDUCED_DATA_DIR / f"{country}_reduced.jl"
+    
+    try:
+        with open(reduced_data_path, "r") as f:
+            lines = f.read().splitlines()
+    
+        data_records = [json.loads(line) for line in lines]
+        reduced_df = pd.DataFrame(data_records)
+
+        # add sources
+        sources_in_data = reduced_df.loc[df['text_ID'].tolist(), 'source'].reset_index(drop=True)
+        df['source'] = sources_in_data
+        
+        if USE_WEIGHTS:
+
+            # Calc weights
+            source_counts = reduced_df.groupby('source').size()
+            source_counts_logged = source_counts.apply(np.log)
+
+            source_weights = source_counts_logged / source_counts_logged.sum()
+
+            source_weights_df = pd.DataFrame(
+                {
+                    'source': source_weights.index,
+                    'source_weight': source_weights.reset_index(drop=True)
+                }
+            )
+
+            # Add weight
+            df_with_weight = pd.merge(df, source_weights_df, how='left', on='source')
+
+    except FileNotFoundError:
+        warnings.warn(f"Reduced data file {reduced_data_path} not found! Peak detection performed unweighted, and vis of source-peaks skipped.")
+        USE_WEIGHTS=False
+
+    # aggregate by time frequency
+    if USE_WEIGHTS:
+        df_agg = aggregate_counts(df_with_weight, freq=AGG_FREQ, weighted=True)
+    else:
+        df_agg = aggregate_counts(df, freq=AGG_FREQ, weighted=False)
+
+    # detect peaks
+    results = detect_anomalies(
+        df_agg,
+        config=CONFIG_USE,
+    )
+
+    # filter peaks
+    flagged = results[results["is_anomaly"]].reset_index(drop=True)
+    flagged['peak_id'] = flagged.index + 1
+    flagged['from_date'] = flagged['date'].dt.to_period("M").dt.start_time.dt.strftime("%Y-%m-%d")
+    flagged['to_date'] = flagged['date'].dt.to_period("M").dt.end_time.dt.strftime("%Y-%m-%d")
+
+    # set output path
+    output_path = outputdir_peaks / country / f"{theme}_peaks.json"
+
+    # ensure directories
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # convert to expected format
+    peaks_out = flagged.set_index("peak_id")[["from_date", "to_date"]].apply(list, axis=1)
+        
+    # store as json
+    #flagged.to_json(output_path, orient="records", lines=True, index=False, date_format="iso")
+    peaks_out.to_json(
+        output_path,
+        orient="index"
+    )
+
+    # print to console
+    print(f"Detected {len(flagged)} peaks for {country} - {theme}.")
+    if not flagged.empty:
+        print(
+            flagged[["date", "count", "anomaly_score"]]
+            .head(10)
+            .to_string(index=False)
+        )
+
+    return results, flagged, USE_WEIGHTS
+
+# simple plotting function
+def simple_peak_plot(results, flagged, output_dir_vis, data_path, USE_WEIGHTS, AGG_FREQ):
+    
+    # Derive country and theme from data_path
+    data_path = Path(data_path)
+    path_elems = data_path.stem.split('_')
+    country = path_elems[0]
+    try:
+        theme = path_elems[1]
+    except IndexError:
+        raise IndexError(f"Filename {data_path.stem} does not match expected pattern {{ctr}}_{{theme}}_matched.jl. No theme found")
+
+    # output dir for vis
+    outputdir_vis = Path(output_dir_vis)
+
+    # output path
+    if USE_WEIGHTS:
+        plot_path = outputdir_vis / country / f"{theme}_peaks_plot_weighted.png"
+    else:
+        plot_path = outputdir_vis / country / f"{theme}_peaks_plot.png"
+
+    # ensure directories
+    plot_path.parent.mkdir(parents=True, exist_ok=True)
+
+    plt.figure(figsize=(12, 5))
+    plt.plot(results["date"], results["count"], color="steelblue", linewidth=1.5)
+    if not flagged.empty:
+        plt.scatter(
+            flagged["date"],
+            flagged["count"],
+            color="crimson",
+            s=35,
+            zorder=3,
+            label="Anomaly",
+        )
+    plt.title(f"Incidence Counts with Anomalies (freq={AGG_FREQ})")
+    plt.xlabel("Date")
+    if USE_WEIGHTS:
+        plt.ylabel("Weighted count")
+    else:
+        plt.ylabel("Count")
+    if not flagged.empty:
+        plt.legend()
+    plt.tight_layout()
+    plt.savefig(plot_path, dpi=150)
+    print(f"Saved plot to {plot_path}")
