@@ -32,3 +32,5 @@ scrapers/ffmpeg*
 _-E4ttc-gJs.json
 controversy-mapping/semantic-mapping/plots
 *controversy-mapping/res
+*nohup.out
+*.bin
