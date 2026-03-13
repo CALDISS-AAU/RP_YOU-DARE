@@ -15,6 +15,8 @@ import json
 import re
 import pandas as pd
 import matplotlib.pyplot as plt
+import plotly.express as px
+
 from sklearn.ensemble import IsolationForest
 
 
@@ -54,7 +56,7 @@ def fix_telegram_source(df):
 ###
 
 
-def aggregate_counts(df, date_col = "publication date", freq = "D", weighted=False, weight_col="source_weight"):
+def aggregate_counts(df, date_col = "publication date", freq = "D", weighted=False, weight_col="actor_weight"):
     """
     Aggregate counts based on time frequency. "D" - day for default.
     Options: "D" - day, "W" - week, "2W" - biweekly, "ME" - month, "2ME" - bimonthly, "QE" - quarter, "YE" - year
@@ -69,19 +71,26 @@ def aggregate_counts(df, date_col = "publication date", freq = "D", weighted=Fal
     series[date_col] = pd.to_datetime(series[date_col], format="%Y-%m-%d") # convert to datetime - expects YYYY-MM-DD
     series = series.sort_values(date_col) # sort
     if weighted:
+        series['normal_count'] = 1 # default normal count
         series["count"] = 1 / series[weight_col] # default count
     else:
         series["count"] = 1 # default count
     daily = series.groupby(date_col, as_index=True)["count"].sum() # count per day
     aggregated = daily.resample(freq).sum() # resample by specified frequency
 
+    if weighted:
+        daily_normal = series.groupby(date_col, as_index=True)["normal_count"].sum() # count per day
+        aggregated_normal = daily_normal.resample(freq).sum() # resample by specified frequency
+        normal_counts = pd.to_numeric(aggregated_normal.reset_index(drop=True), errors="coerce")
+
     new_ts = aggregated.reset_index()
     
     # convert to expected data format
     ts_out = new_ts[[date_col, "count"]].copy()
     ts_out[date_col] = pd.to_datetime(ts_out[date_col])
-    ts_out = ts_out.sort_values(date_col).set_index(date_col)
     ts_out["count"] = pd.to_numeric(ts_out["count"], errors="coerce")
+    if weighted:
+        ts_out['normal_count'] = normal_counts
 
     return ts_out
 
@@ -95,6 +104,7 @@ def detect_anomalies(ts, date_col = "publication date", config: Optional[Anomaly
     cfg = config or AnomalyConfig() # load config or use defaults
     
     min_periods = cfg.min_periods
+    ts = ts.sort_values(date_col).set_index(date_col)
     rolling = ts["count"].rolling(window=cfg.window, min_periods=min_periods) # rolling counts
 
     # derive features - uses mean, std and day of year
@@ -165,6 +175,9 @@ def find_peaks(
     AGG_FREQ, 
     USE_WEIGHTS,
     year_cutoff_start=2015,
+    remove_flashback=True,
+    source_to_actor_map=None,
+    year_cutoff_end=2026 # exclusive
     ):
 
     # Paths
@@ -193,9 +206,10 @@ def find_peaks(
     )
     df["publication date"] = pd.to_datetime(df["publication date"], format="%Y-%m-%d") # convert to datetime - expects YYYY-MM-DD
 
-    cutoff_date = pd.Timestamp(year=year_cutoff_start, month=1, day=1)
+    cutoff_date_start = pd.Timestamp(year=year_cutoff_start, month=1, day=1)
+    cutoff_date_end = pd.Timestamp(year=year_cutoff_end, month=1, day=1)
 
-    df = df[df["publication date"] >= cutoff_date]
+    df = df[(df["publication date"] >= cutoff_date_start) & (df["publication date"] < cutoff_date_end)].reset_index(drop=True)
 
     # read reduced data (for weights and source)
     reduced_data_path = REDUCED_DATA_DIR / f"{country}_reduced.jl"
@@ -211,30 +225,47 @@ def find_peaks(
         sources_in_data = reduced_df.loc[df['text_ID'].tolist(), 'source'].reset_index(drop=True)
         df['source'] = sources_in_data
         
+        # filter flashback
+        if country == "SWE" and remove_flashback:
+            df['source'] = df['source'].fillna('').astype(str)
+            df = df[~df['source'].str.contains("flashback", case=False)].reset_index(drop=True)
+
+        # add actor 
+        if source_to_actor_map:
+            if country == "SWE":
+                country_lookup = "SE"
+            else:
+                country_lookup = country
+            df['actor'] = df['source'].replace(source_to_actor_map.get(country_lookup))
+            reduced_df['actor'] = reduced_df['source'].replace(source_to_actor_map.get(country_lookup))
+        else:
+            df['actor'] = df['source']
+
+
         if USE_WEIGHTS:
 
             # Calc weights
-            source_counts = reduced_df.groupby('source').size()
+            source_counts = reduced_df.groupby('actor').size()
             source_counts_logged = source_counts.apply(np.log)
 
             source_weights = source_counts_logged / source_counts_logged.sum()
 
             source_weights_df = pd.DataFrame(
                 {
-                    'source': source_weights.index,
-                    'source_weight': source_weights.reset_index(drop=True)
+                    'actor': source_weights.index,
+                    'actor_weight': source_weights.reset_index(drop=True)
                 }
             )
 
             # Add weight
-            df_with_weight = pd.merge(df, source_weights_df, how='left', on='source')
+            df_with_weight = pd.merge(df, source_weights_df, how='left', on='actor')
 
     except FileNotFoundError:
         warnings.warn(f"Reduced data file {reduced_data_path} not found! Peak detection performed unweighted, and vis of source-peaks skipped.")
         USE_WEIGHTS=False
 
     # aggregate by time frequency
-    if USE_WEIGHTS:
+    if USE_WEIGHTS: 
         df_agg = aggregate_counts(df_with_weight, freq=AGG_FREQ, weighted=True)
     else:
         df_agg = aggregate_counts(df, freq=AGG_FREQ, weighted=False)
@@ -278,6 +309,101 @@ def find_peaks(
 
     return results, flagged, USE_WEIGHTS
 
+# data frame for counts per source
+def count_by_source(
+    data_path, 
+    REDUCED_DATA_DIR,
+    AGG_FREQ, 
+    year_cutoff_start=2015,
+    normalize=True,
+    remove_flashback=True,
+    source_to_actor_map=None,
+    year_cutoff_end=2026 # exclusive
+    ):
+
+    # Paths
+    data_path = Path(data_path)
+    
+    # Derive country and theme from data_path
+    path_elems = data_path.stem.split('_')
+    country = path_elems[0]
+    try:
+        theme = path_elems[1]
+    except IndexError:
+        raise IndexError(f"Filename {data_path.stem} does not match expected pattern {{ctr}}_{{theme}}_matched.jl. No theme found")
+
+    # read data
+    with open(data_path, "r") as f:
+        lines = f.read().splitlines()
+
+    data_records = [json.loads(line) for line in lines]
+    df = pd.DataFrame(data_records)
+
+    # cut-off date
+    if "publication date" not in df.columns: # check if date col is in data
+        raise ValueError(
+            f"Expected columns 'publication date' not in {list(df.columns)}"
+    )
+    df["publication date"] = pd.to_datetime(df["publication date"], format="%Y-%m-%d") # convert to datetime - expects YYYY-MM-DD
+
+    cutoff_date_start = pd.Timestamp(year=year_cutoff_start, month=1, day=1)
+    cutoff_date_end = pd.Timestamp(year=year_cutoff_end, month=1, day=1)
+
+    df = df[(df["publication date"] >= cutoff_date_start) & (df["publication date"] < cutoff_date_end)].reset_index(drop=True)
+
+    # read reduced data (for weights and source)
+    reduced_data_path = REDUCED_DATA_DIR / f"{country}_reduced.jl"
+    
+    try:
+        with open(reduced_data_path, "r") as f:
+            lines = f.read().splitlines()
+    
+        data_records = [json.loads(line) for line in lines]
+        reduced_df = pd.DataFrame(data_records)
+
+        # add sources
+        sources_in_data = reduced_df.loc[df['text_ID'].tolist(), 'source'].reset_index(drop=True)
+        df['source'] = sources_in_data
+
+        # filter flashback
+        if country == "SWE" and remove_flashback:
+            df['source'] = df['source'].fillna('').astype(str)
+            df = df[~df['source'].str.contains("flashback", case=False)].reset_index(drop=True)
+
+        # add actor 
+        if source_to_actor_map:
+            if country == "SWE":
+                country_lookup = "SE"
+            else:
+                country_lookup = country
+            df['actor'] = df['source'].replace(source_to_actor_map.get(country_lookup))
+        else:
+            df['actor'] = df['source']
+
+    except FileNotFoundError:
+        warnings.warn(f"Reduced data file {reduced_data_path} not found! Vis of source-peaks skipped.")
+        USE_WEIGHTS=False
+
+    # Count by source
+    df_sources_count = pd.DataFrame()
+
+    for actor in df['actor'].unique().tolist():
+
+        df_source = df[df['actor'] == actor]
+
+        df_agg = aggregate_counts(df_source, freq=AGG_FREQ, weighted=False)
+        df_agg['actor'] = actor
+
+        if normalize:
+            df_agg['count_normalized'] = df_agg['count'] / df_agg['count'].sum()
+
+        df_sources_count = pd.concat([df_sources_count, df_agg], axis=0, ignore_index=True)
+
+    # rename
+    df_sources_count = df_sources_count.rename(columns={"publication date": "date"})
+
+    return df_sources_count
+
 # simple plotting function
 def simple_peak_plot(results, flagged, output_dir_vis, data_path, USE_WEIGHTS, AGG_FREQ):
     
@@ -295,9 +421,9 @@ def simple_peak_plot(results, flagged, output_dir_vis, data_path, USE_WEIGHTS, A
 
     # output path
     if USE_WEIGHTS:
-        plot_path = outputdir_vis / country / f"{theme}_peaks_plot_weighted.png"
+        plot_path = outputdir_vis / country / theme / f"{theme}_peaks_plot_weighted.png"
     else:
-        plot_path = outputdir_vis / country / f"{theme}_peaks_plot.png"
+        plot_path = outputdir_vis / country / theme / f"{theme}_peaks_plot.png"
 
     # ensure directories
     plot_path.parent.mkdir(parents=True, exist_ok=True)
@@ -324,3 +450,271 @@ def simple_peak_plot(results, flagged, output_dir_vis, data_path, USE_WEIGHTS, A
     plt.tight_layout()
     plt.savefig(plot_path, dpi=150)
     print(f"Saved plot to {plot_path}")
+
+# plotly function
+def plotly_peaks(results, flagged, output_dir_vis, data_path, USE_WEIGHTS, AGG_FREQ):
+
+    # Derive country and theme from data_path
+    data_path = Path(data_path)
+    path_elems = data_path.stem.split('_')
+    country = path_elems[0]
+    try:
+        theme = path_elems[1]
+    except IndexError:
+        raise IndexError(f"Filename {data_path.stem} does not match expected pattern {{ctr}}_{{theme}}_matched.jl. No theme found")
+
+    # output dir for vis
+    outputdir_vis = Path(output_dir_vis)
+
+    # output path
+    plot_path = outputdir_vis / country / theme / f"{theme}_peaks_plot.html"
+
+    # ensure directories
+    plot_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # add row index (for peak counts)
+    flagged['peakid'] = flagged.index + 1
+
+    # Create plots
+    if USE_WEIGHTS:
+        fig = px.line(
+        results, 
+        x="date", 
+        y="count", 
+        custom_data=["normal_count"]
+        )
+
+        fig.update_layout(
+            title=f'<b>Weighted text counts with peaks (freq={AGG_FREQ})<b>',
+            title_subtitle=dict(text=f"By: {theme} & {country}")
+        )
+
+        fig.update_traces(
+        line=dict(color="#4C72B0"),
+        selector=dict(mode="lines"),
+        hovertemplate=(
+            "Date: %{x}<br>"
+            "Weighted count: %{y}<br>"
+            "Raw count: %{customdata[0]}<extra></extra>"
+            ) 
+        ) 
+
+        if not flagged.empty:
+            fig.add_scatter(
+                x=flagged["date"],
+                y=flagged["count"], 
+                customdata=flagged["normal_count"],
+                mode="markers+text",
+                text=flagged['peakid'],
+                textposition='top center',
+                name="Trend Peaks",
+                marker=dict(color="#992F87", size=10)
+            )
+
+            fig.update_traces(
+            selector=dict(mode="markers+text"),
+            hovertemplate=(
+                "Date: %{x}<br>"
+                "Weighted count: %{y}<br>"
+                "Raw count: %{customdata}<extra></extra>"
+                ) 
+            ) 
+
+        fig.update_yaxes(
+                title_text='Weighted counts',
+                showgrid=True,
+                gridcolor='lightgray'
+            )
+
+        fig.update_xaxes(
+            title_text='Time',
+            showgrid=True,
+            gridcolor='lightgray'
+        )
+
+        fig.update_layout(
+            plot_bgcolor="#F5F7FA",
+            paper_bgcolor="#F5F7FA",
+            )
+
+    else:
+        fig = px.line(
+        results, 
+        x="date", 
+        y="count", 
+        )
+
+        fig.update_layout(
+            title=f'<b>Text counts with peaks (freq={AGG_FREQ})<b>',
+            title_subtitle=dict(text=f"By: {theme} & {country}")
+        )
+
+        fig.update_traces(
+        line=dict(color="#4C72B0"),
+        selector=dict(mode="lines"),
+        hovertemplate=(
+            "Date: %{x}<br>"
+            "Count: %{y}<br><extra></extra>"
+            ) 
+        ) 
+
+        if not flagged.empty:
+            fig.add_scatter(
+                x=flagged["date"],
+                y=flagged["count"], 
+                mode="markers+text",
+                text=flagged['peakid'],
+                textposition='top center',
+                name="Trend Peaks",
+                marker=dict(color="#992F87", size=10)
+            )
+
+            fig.update_traces(
+            selector=dict(mode="markers+text"),
+            hovertemplate=(
+                "Date: %{x}<br>"
+                "Count: %{y}<br><extra></extra>"
+                ) 
+            ) 
+
+        fig.update_yaxes(
+                title_text='Counts',
+                showgrid=True,
+                gridcolor='lightgray'
+            )
+
+        fig.update_xaxes(
+            title_text='Time',
+            showgrid=True,
+            gridcolor='lightgray'
+        )
+
+        fig.update_layout(
+            plot_bgcolor="#F5F7FA",
+            paper_bgcolor="#F5F7FA",
+            )
+        
+    
+    fig.write_html(plot_path)
+    print(f"Saved html plot to {plot_path}")
+
+# actor plot
+def plotly_peaks_by_actor(df_by_source, flagged, output_dir_vis, data_path, USE_WEIGHTS, AGG_FREQ):
+
+    # Derive country and theme from data_path
+    data_path = Path(data_path)
+    path_elems = data_path.stem.split('_')
+    country = path_elems[0]
+    try:
+        theme = path_elems[1]
+    except IndexError:
+        raise IndexError(f"Filename {data_path.stem} does not match expected pattern {{ctr}}_{{theme}}_matched.jl. No theme found")
+
+    # output dir for vis
+    outputdir_vis = Path(output_dir_vis)
+
+    # output path
+    plot_path = outputdir_vis / country / theme / f"{theme}_actor-activity_plot.html"
+
+    # ensure directories
+    plot_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # create complete df
+    dates = pd.date_range(df_by_source['date'].min(), df_by_source['date'].max(), freq=AGG_FREQ)
+
+    full = pd.MultiIndex.from_product(
+        [dates, df_by_source['actor'].unique()],
+        names=['date', 'actor']
+    ).to_frame(index=False)
+    
+    df_by_source = (full.merge(df_by_source, on=['date', 'actor'], how='left').assign(count_normalized=lambda d: d['count_normalized'].fillna(0)))
+
+    # Create plot
+    fig = px.line(
+        df_by_source, 
+        x="date", 
+        y="count_normalized", 
+        color='actor',
+        custom_data=["count"]) 
+    
+    fig.update_yaxes(
+        title_text='Normalized counts',
+        showgrid=True,
+        gridcolor='lightgray'
+    )
+
+    fig.update_xaxes(
+        title_text='Time',
+        showgrid=True,
+        gridcolor='lightgray'
+    )
+
+    fig.update_layout(
+        title=f"<b>Normalized text count by actor (freq={AGG_FREQ}) - vertical lines indicate peaks</b>",
+        title_subtitle=dict(text=f"By: {theme} & {country}")
+    )
+    
+    fig.update_traces(
+        selector=dict(mode="lines"),
+        hovertemplate="Count: %{customdata[0]}<extra></extra>"
+    )
+    
+    if not flagged.empty:
+        for i, date in enumerate(flagged["date"].tolist(), start=1):
+            fig.add_vline(x=date, line_dash="dot")
+            fig.add_annotation(
+                x=date,
+                y=1.05,
+                text=f"Peak {i}",
+                textangle=-90,
+                showarrow=False,
+                xanchor='left',
+                yanchor='bottom',
+                font=dict(color='gray', size=11)
+            )
+        # # Secret line just for hovering
+        #     fig.add_scatter(
+        #         x=[date],
+        #         y=[1.1],
+        #         mode="lines+text",
+        #         text=f"Peak {i}",
+        #         textposition='top left',
+        #         line=dict(dash="dot", color="gray"),
+        #         showlegend=False
+        #         )
+
+    fig.update_layout(
+        plot_bgcolor="#F5F7FA",
+        paper_bgcolor="#F5F7FA",
+        )
+
+    #else:
+#
+    #    fig = px.line(
+    #        df_by_source, 
+    #        x="date", 
+    #        y="count_normalized", 
+    #        color='source',
+    #        custom_data=["count"])
+    #    
+    #    
+    #    fig.update_layout(
+    #        title=f"<b>Normalized text count by actor (freq={AGG_FREQ}) - vertical lines indicate peaks</b>",
+    #        title_subtitle=dict(text=f"By: {theme} & {country}")
+    #    )
+    #    
+    #    fig.update_traces(
+    #    selector=dict(mode="lines"),
+    #    hovertemplate="Count: %{customdata[0]}<extra></extra>"
+    #    )
+    #    if not flagged.empty:
+    #        for date in flagged["date"].tolist():
+    #            fig.add_vline(x=date, line_dash="dot")
+#
+    #        fig.update_layout(
+    #            plot_bgcolor="#F5F7FA",
+    #            paper_bgcolor="#F5F7FA",
+    #            )
+
+    fig.write_html(plot_path)
+    print(f"Saved actor plot to {plot_path}")

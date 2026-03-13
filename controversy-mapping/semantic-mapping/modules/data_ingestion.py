@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from multiprocessing import Pool
+import math
 import ast
 from pathlib import Path
 from typing import Any, Iterable, List, Optional, Sequence
 
 import pandas as pd
-
+import numpy as np
 
 @dataclass
 class ChunkConfig:
@@ -145,6 +147,59 @@ def sentences_to_chunks(df, config: Optional[ChunkConfig] = None):
     out_df = pd.DataFrame(chunk_rows, columns=output_columns)
 
     return out_df
+
+
+def sentences_to_chunk_mp(df, config: Optional[ChunkConfig] = None, n_workers: int = 2):
+    """
+    Multiprocessing wrapper for sentences_to_chunks.
+    Splits dataframe into subset dataframes by unique text_id values and
+    processes subsets in parallel.
+    """
+    cfg = config or ChunkConfig()
+
+    if n_workers < 1:
+        raise ValueError(f"n_workers must be >= 1, got {n_workers}")
+    if cfg.text_id_col not in df.columns:
+        raise KeyError(f"Missing required column: {cfg.text_id_col}")
+
+    df_mp = df.copy()
+    df_mp[cfg.text_id_col] = df_mp[cfg.text_id_col].apply(_safe_text)
+
+    unique_text_ids = df_mp[cfg.text_id_col].drop_duplicates().tolist()
+    if not unique_text_ids:
+        return sentences_to_chunks(df_mp, cfg)
+
+    n_workers = min(n_workers, len(unique_text_ids))
+    split_size = math.ceil(len(unique_text_ids) / n_workers)
+    text_id_splits = [
+        unique_text_ids[idx : idx + split_size]
+        for idx in range(0, len(unique_text_ids), split_size)
+    ]
+
+    subset_dfs = [
+        df_mp[df_mp[cfg.text_id_col].isin(text_id_subset)].copy()
+        for text_id_subset in text_id_splits
+    ]
+
+    with Pool(processes=n_workers) as pool:
+        chunked_parts = pool.starmap(
+            sentences_to_chunks,
+            [(subset_df, cfg) for subset_df in subset_dfs],
+        )
+
+    non_empty_parts = [part for part in chunked_parts if not part.empty]
+    if not non_empty_parts:
+        return pd.DataFrame(columns=_output_columns(df.columns, cfg))
+    return pd.concat(non_empty_parts, ignore_index=True)
+
+
+## Read parquet + embeddings to df
+def read_embeddings_as_df(chunked_path, emb_path) -> pd.DataFrame:
+    chunked = pd.read_parquet(chunked_path)
+    emb = np.load(emb_path)  # shape (n, dim)
+
+    chunked["embedding"] = emb.astype(float).tolist()
+    return chunked
 
 
 def _safe_text(value: Any) -> str:

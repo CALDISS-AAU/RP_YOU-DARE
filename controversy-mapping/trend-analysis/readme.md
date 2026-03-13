@@ -4,9 +4,22 @@ Bruger isolation forest til at detektere peaks.
 
 Kør fra directory YOU-DARE/controversy-mapping/trend-analysis som modul med:
 
-`python -m run_peak_detection --data-path "path/to/importdata.jsonl"`
+`python -m peak_detection --data-path "path/to/importdata.jsonl"`
 
-Output i form af jsonlines under output directory med tidspunkt + is_anomaly variabel. Spytter lige nu også plot ud.
+Output i form af json under output directory i lande mappe, fil navngivet efter tema. Spytter lige nu også plots ud.
+
+Kan også tage directory som input:
+
+`python -m peak_detection --data-dir "path/to/importdatadirectory"`
+
+
+## Full run med vægts
+
+For at finde alle peaks og lave alle visualiseringer kør:
+
+`python -m peak_detection --data-dir "/work/YOU-DARE/sentence_filtering/indexed_data_OG_lan_ONLY" --use-weights`
+
+**OBS**: Køres funktionen uden data-input, er default at køre på hele directory: /work/YOU-DARE/sentence_filtering/indexed_data
 
 ### Vægte
 
