@@ -14,33 +14,25 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
 
-from modules.anomaly_detection import AnomalyConfig, find_peaks, simple_peak_plot, plotly_peaks, count_by_source, plotly_peaks_by_actor
+from modules.anomaly_detection import AnomalyConfig, find_peaks
+from modules.plotters import gen_streamgraph_peaks
 
 # SET SETTINGS FOR ANOMALY DETECTION HERE
 CONFIG_USE=AnomalyConfig(
-            window=1, # n "windows" to partition data into - default 1 - works well for this task as we are not looking at "local" relative peaks
+            window=80, # n "windows" to partition data into - default 1 - works well for this task as we are not looking at "local" relative peaks
             score_std_cutoff=None, # cutoff for included peaks/anomalies - n standard deviations from 4th quartile of initially detected anomalies. Default None (include all)
             # negative values: includes less than top quartile
             # positive values: includes more than top quartil
             # None: Includes all detected anomalies/peaks
-            contamination=None # share of time points expected to be anomalies/peaks - None (default) uses share 10/n_timepoints (10 peaks expected)
+            contamination=0.5 # share of time points expected to be anomalies/peaks - None (default) uses share 15/n_timepoints (15 peaks expected)
         )
 
 # SET AGGREGATION LEVEL HERE
 # Options: "D" - day, "W" - week, "2W" - biweekly, "ME" - month, "2ME" - bimonthly, "QE" - quarter, "YE" - year
-AGG_FREQ_USE = "ME"
-
-# PATH TO REDUCED DATA (for weights)
-REDUCED_DATA_DIR = Path("/work/YOU-DARE/controversy-mapping/sentence_filtering/reduced_data")
-
-# SOURCE TO ACTOR MAP
-SOURCE_TO_ACTOR_PATH = "/work/YOU-DARE/raw-data/mappings/actor_mapping.json"
-
-with open(SOURCE_TO_ACTOR_PATH, 'r') as f:
-    SOURCE_TO_ACTOR = json.load(f)
+AGG_FREQ_USE = "ME" # NOTE: Plotting function may not be updated to account for changes in agg_freq
 
 # main function
-def main(CONFIG_USE=CONFIG_USE, AGG_FREQ=AGG_FREQ_USE, REDUCED_DATA_DIR=REDUCED_DATA_DIR):
+def main(CONFIG_USE=CONFIG_USE, AGG_FREQ=AGG_FREQ_USE):
 
     parser = argparse.ArgumentParser(description="Run anomaly detection.")
     datainput_group = parser.add_mutually_exclusive_group(required=False)
@@ -54,11 +46,6 @@ def main(CONFIG_USE=CONFIG_USE, AGG_FREQ=AGG_FREQ_USE, REDUCED_DATA_DIR=REDUCED_
         help="Path to input directory with JSONL files."
     )
     parser.add_argument(
-        "--use-weights",
-        action="store_true",
-        help="Apply source weights to counts"
-        )
-    parser.add_argument(
         "--output-dir-peaks",
         default="/work/YOU-DARE/controversy-mapping/trend-analysis/output/peaks",
         help="Directory for storing jsonlines with peaks"
@@ -71,61 +58,26 @@ def main(CONFIG_USE=CONFIG_USE, AGG_FREQ=AGG_FREQ_USE, REDUCED_DATA_DIR=REDUCED_
 
     args = parser.parse_args()
 
-    
-    USE_WEIGHTS = args.use_weights
-
     # use path
     if args.data_path: 
 
         # find peaks
-        results, flagged, USE_WEIGHTS = find_peaks(
+        results, flagged = find_peaks(
             data_path=args.data_path, 
             output_dir_peaks=args.output_dir_peaks,
+            output_dir_vis=args.output_dir_vis,
             year_cutoff_start=2015,
-            REDUCED_DATA_DIR=REDUCED_DATA_DIR,
             CONFIG_USE=CONFIG_USE, 
             AGG_FREQ=AGG_FREQ, 
-            USE_WEIGHTS=USE_WEIGHTS,
-            source_to_actor_map=SOURCE_TO_ACTOR
             )
-        
-        # simple plot
-        #simple_peak_plot(
-        #    results=results,
-        #    flagged=flagged,
-        #    output_dir_vis=args.output_dir_vis,
-        #    data_path=args.data_path,
-        #    AGG_FREQ=AGG_FREQ,
-        #    USE_WEIGHTS=USE_WEIGHTS
-        #)
 
-        # plotly peaks
-        plotly_peaks(
+        # generate plot (streamgraph)
+        gen_streamgraph_peaks(
             results=results,
             flagged=flagged,
             output_dir_vis=args.output_dir_vis,
             data_path=args.data_path,
-            AGG_FREQ=AGG_FREQ,
-            USE_WEIGHTS=USE_WEIGHTS
-        )
-
-        # actor plots
-        df_by_source = count_by_source(
-            args.data_path, 
-            REDUCED_DATA_DIR,
-            AGG_FREQ, 
-            year_cutoff_start=2015,
-            normalize=True,
-            source_to_actor_map=SOURCE_TO_ACTOR
-            )
-            
-        plotly_peaks_by_actor(
-            df_by_source=df_by_source,
-            flagged=flagged,
-            output_dir_vis=args.output_dir_vis,
-            data_path=args.data_path,
-            AGG_FREQ=AGG_FREQ,
-            USE_WEIGHTS=USE_WEIGHTS
+            AGG_FREQ=AGG_FREQ
         )
 
     # use dir
@@ -149,57 +101,23 @@ def main(CONFIG_USE=CONFIG_USE, AGG_FREQ=AGG_FREQ_USE, REDUCED_DATA_DIR=REDUCED_
         # run peak detection on files
         for data_path in data_paths:
             # find peaks
-            results, flagged, USE_WEIGHTS = find_peaks(
+            results, flagged = find_peaks(
                 data_path=data_path, 
                 output_dir_peaks=args.output_dir_peaks,
+                output_dir_vis=args.output_dir_vis,
                 year_cutoff_start=2015,
-                REDUCED_DATA_DIR=REDUCED_DATA_DIR,
                 CONFIG_USE=CONFIG_USE, 
                 AGG_FREQ=AGG_FREQ, 
-                USE_WEIGHTS=USE_WEIGHTS,
-                source_to_actor_map=SOURCE_TO_ACTOR
-                )
+            )
             
-            # simple plot
-            #simple_peak_plot(
-            #    results=results,
-            #    flagged=flagged,
-            #    output_dir_vis=args.output_dir_vis,
-            #    data_path=data_path,
-            #    AGG_FREQ=AGG_FREQ,
-            #    USE_WEIGHTS=USE_WEIGHTS
-            #)
-
             # plotly peaks
-            plotly_peaks(
+            gen_streamgraph_peaks(
                 results=results,
                 flagged=flagged,
                 output_dir_vis=args.output_dir_vis,
                 data_path=data_path,
-                AGG_FREQ=AGG_FREQ,
-                USE_WEIGHTS=USE_WEIGHTS
-                )
-                
-
-            # actor plots
-            df_by_source = count_by_source(
-                data_path, 
-                REDUCED_DATA_DIR,
-                AGG_FREQ, 
-                year_cutoff_start=2015,
-                normalize=True,
-                source_to_actor_map=SOURCE_TO_ACTOR
-                )
-            
-            plotly_peaks_by_actor(
-                df_by_source=df_by_source,
-                flagged=flagged,
-                output_dir_vis=args.output_dir_vis,
-                data_path=data_path,
-                AGG_FREQ=AGG_FREQ,
-                USE_WEIGHTS=USE_WEIGHTS
+                AGG_FREQ=AGG_FREQ
             )
-            
 
 # run main
 if __name__ == "__main__":
