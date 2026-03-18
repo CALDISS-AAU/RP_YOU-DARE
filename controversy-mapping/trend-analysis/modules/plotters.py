@@ -87,7 +87,7 @@ def gen_streamgraph_peaks(results, flagged, output_dir_vis, data_path, AGG_FREQ)
 
     ## fill missing
     plot_df["count"] = plot_df["count"].fillna(0)
-    plot_df["share_texts"] = np.where( # weight based on share of texts
+    plot_df["weight"] = np.where( # weight based on share of texts
         plot_df["actor_total_texts"] > 0,
         plot_df["count"] / plot_df["actor_total_texts"],
         0,
