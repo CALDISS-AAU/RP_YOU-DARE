@@ -32,7 +32,7 @@ def gen_streamgraph_peaks(results, flagged, output_dir_vis, data_path, AGG_FREQ)
         warnings.warn("No results available for streamgraph plotting.")
         return None
 
-    def _gaussian_smooth(values: np.ndarray, sigma: float = 2.0) -> np.ndarray:
+    def _gaussian_smooth(values: np.ndarray, sigma: float = 2) -> np.ndarray:
         if values.size <= 1:
             return values.astype(float)
 
@@ -87,7 +87,7 @@ def gen_streamgraph_peaks(results, flagged, output_dir_vis, data_path, AGG_FREQ)
 
     ## fill missing
     plot_df["count"] = plot_df["count"].fillna(0)
-    plot_df["weight"] = np.where( # weight based on share of texts
+    plot_df["share_texts"] = np.where( # weight based on share of texts
         plot_df["actor_total_texts"] > 0,
         plot_df["count"] / plot_df["actor_total_texts"],
         0,
@@ -111,8 +111,10 @@ def gen_streamgraph_peaks(results, flagged, output_dir_vis, data_path, AGG_FREQ)
         index=weight_wide.index,
     )
 
-    actor_order = smoothed_weights.sum(axis=0).sort_values(ascending=False).index.tolist()
-    smoothed_weights = smoothed_weights[actor_order]
+    #actor_order = smoothed_weights.sum(axis=0).sort_values(ascending=False).index.tolist()
+    #smoothed_weights = smoothed_weights[actor_order]
+    actor_order = weight_wide.sum(axis=0).sort_values(ascending=False).index.tolist()
+    smoothed_weights = weight_wide[actor_order]
 
     # values to plot
     x_values = smoothed_weights.index.to_pydatetime()
