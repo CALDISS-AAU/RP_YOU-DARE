@@ -84,7 +84,7 @@ def main(CONFIG_USE=CONFIG_USE, AGG_FREQ=AGG_FREQ_USE, REDUCED_DATA_DIR=REDUCED_
             year_cutoff_start=2015,
             REDUCED_DATA_DIR=REDUCED_DATA_DIR,
             CONFIG_USE=CONFIG_USE, 
-            AGG_FREQ=AGG_FREQ_USE, 
+            AGG_FREQ=AGG_FREQ, 
             USE_WEIGHTS=USE_WEIGHTS,
             source_to_actor_map=SOURCE_TO_ACTOR
             )
@@ -155,7 +155,7 @@ def main(CONFIG_USE=CONFIG_USE, AGG_FREQ=AGG_FREQ_USE, REDUCED_DATA_DIR=REDUCED_
                 year_cutoff_start=2015,
                 REDUCED_DATA_DIR=REDUCED_DATA_DIR,
                 CONFIG_USE=CONFIG_USE, 
-                AGG_FREQ=AGG_FREQ_USE, 
+                AGG_FREQ=AGG_FREQ, 
                 USE_WEIGHTS=USE_WEIGHTS,
                 source_to_actor_map=SOURCE_TO_ACTOR
                 )

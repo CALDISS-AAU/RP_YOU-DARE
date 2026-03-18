@@ -222,7 +222,7 @@ def find_peaks(
         reduced_df = pd.DataFrame(data_records)
 
         # add sources
-        sources_in_data = reduced_df.loc[df['text_ID'].tolist(), 'source'].reset_index(drop=True)
+        sources_in_data = reduced_df.loc[df['entry_ID'].tolist(), 'source'].reset_index(drop=True)
         df['source'] = sources_in_data
         
         # filter flashback
