@@ -180,8 +180,7 @@ def gen_streamgraph_peaks(results, flagged, output_dir_vis, data_path, AGG_FREQ)
     ax.margins(x=0)
 
     # adjust ticks
-    if len(actor_order) <= 15:
-        ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5), frameon=False, title="Actor")
+    ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5), frameon=True, title="Actor")
 
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
     plt.tight_layout()

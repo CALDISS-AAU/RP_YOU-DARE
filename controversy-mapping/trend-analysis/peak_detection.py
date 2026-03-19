@@ -14,17 +14,18 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
 
-from modules.anomaly_detection import AnomalyConfig, find_peaks
+from modules.anomaly_detection import AnomalyConfig, _find_peaks
 from modules.plotters import gen_streamgraph_peaks
 
 # SET SETTINGS FOR ANOMALY DETECTION HERE
 CONFIG_USE=AnomalyConfig(
             window=10, # n "windows" to partition data into - default 1 - works well for this task as we are not looking at "local" relative peaks
+            min_periods=2,
             score_std_cutoff=None, # cutoff for included peaks/anomalies - n standard deviations from 4th quartile of initially detected anomalies. Default None (include all)
             # negative values: includes less than top quartile
             # positive values: includes more than top quartil
             # None: Includes all detected anomalies/peaks
-            contamination=0.5 # share of time points expected to be anomalies/peaks - None (default) uses share 15/n_timepoints (15 peaks expected)
+            contamination=0.3 # share of time points expected to be anomalies/peaks - None (default) uses share 15/n_timepoints (15 peaks expected)
         )
 
 # SET AGGREGATION LEVEL HERE
@@ -62,7 +63,7 @@ def main(CONFIG_USE=CONFIG_USE, AGG_FREQ=AGG_FREQ_USE):
     if args.data_path: 
 
         # find peaks
-        results, flagged = find_peaks(
+        results, flagged = _find_peaks(
             data_path=args.data_path, 
             output_dir_peaks=args.output_dir_peaks,
             output_dir_vis=args.output_dir_vis,
@@ -101,7 +102,7 @@ def main(CONFIG_USE=CONFIG_USE, AGG_FREQ=AGG_FREQ_USE):
         # run peak detection on files
         for data_path in data_paths:
             # find peaks
-            results, flagged = find_peaks(
+            results, flagged = _find_peaks(
             data_path=data_path, 
             output_dir_peaks=args.output_dir_peaks,
             output_dir_vis=args.output_dir_vis,

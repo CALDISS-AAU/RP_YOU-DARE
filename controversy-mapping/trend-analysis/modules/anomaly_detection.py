@@ -16,6 +16,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import plotly.express as px
+from scipy.signal import find_peaks
 
 from sklearn.ensemble import IsolationForest
 
@@ -39,7 +40,7 @@ class AnomalyConfig:
     score_std_cutoff: Optional[float] = None # cutoff for included peaks/anomalies - n standard deviations from 4th quartile of initially detected anomalies. Default None (include all)
 
 
-def aggregate_counts(df, date_col = "publication date", freq = "D", weighted=False, weight_col="actor_weight"):
+def aggregate_counts(df, date_col = "publication date", freq = "D", weighted=False, weight_col="actor_weight", start_year=2015, end_year=2025):
     """
     Aggregate counts based on time frequency. "D" - day for default.
     Options: "D" - day, "W" - week, "2W" - biweekly, "ME" - month, "2ME" - bimonthly, "QE" - quarter, "YE" - year
@@ -61,8 +62,8 @@ def aggregate_counts(df, date_col = "publication date", freq = "D", weighted=Fal
     daily = series.groupby(date_col, as_index=True)["count"].sum() # count per day
     aggregated = daily.resample(freq).sum() # resample by specified frequency
     full_index = pd.date_range(
-        start=aggregated.index.min(),
-        end=aggregated.index.max(),
+        start=pd.Timestamp(f"{start_year}-01-01"),
+        end=f"{end_year}-12-31",
         freq=freq,
     )
     aggregated = aggregated.reindex(full_index, fill_value=0)
@@ -82,6 +83,35 @@ def aggregate_counts(df, date_col = "publication date", freq = "D", weighted=Fal
         ts_out['normal_count'] = normal_counts
 
     return ts_out
+
+def detect_anomalies_scipy(ts, date_col="publication date", prominence=0.005, distance=1):
+    ts = ts.sort_values(date_col).set_index(date_col)
+
+    if ts.empty:
+        raise ValueError("No samples available for anomaly detection.")
+
+    total_count = ts["count"].sum()
+    if total_count > 0:
+        share = ts["count"] / total_count
+    else:
+        share = pd.Series(0.0, index=ts.index, dtype=float)
+
+    peak_idx, peak_props = find_peaks(
+        share.to_numpy(),
+        prominence=prominence,
+        distance=distance,
+    )
+
+    result = ts.copy()
+    result["share"] = share
+    result["date"] = result.index
+    result["is_anomaly"] = False
+
+    if len(peak_idx) > 0:
+        peak_dates = result.index[peak_idx]
+        result.loc[peak_dates, "is_anomaly"] = True
+
+    return result.reset_index()
 
 
 def detect_anomalies(ts, date_col = "publication date", config: Optional[AnomalyConfig] = None):
@@ -103,7 +133,7 @@ def detect_anomalies(ts, date_col = "publication date", config: Optional[Anomaly
     baseline = rolling_mean.shift(1) # baseline for only keeping peaks (not downward anomalies)
     features["rolling_mean"] = rolling_mean
     features["rolling_std"] = rolling.std().fillna(0)
-    #features["day_of_year"] = features.index.dayofyear
+    features["day_of_year"] = features.index.dayofyear
     features = features.bfill().ffill() # fill missing - forward and backward fill
 
     n_samples = len(features)
@@ -193,7 +223,7 @@ def filter_adjacent_peak_ranges(flagged: pd.DataFrame) -> pd.DataFrame:
     return filtered_peaks_df
 
 # Main peak detection function
-def find_peaks(
+def _find_peaks(
     data_path, 
     output_dir_peaks,
     output_dir_vis,
@@ -252,6 +282,9 @@ def find_peaks(
             df_agg,
             config=CONFIG_USE,
         )
+
+        #results = detect_anomalies_scipy(
+        #    df_agg)
 
         # add start and end
         results['from_date'] = results['date'].dt.to_period("M").dt.start_time.dt.strftime("%Y-%m-%d")
@@ -321,7 +354,7 @@ def find_peaks(
 
     # final candidates
     candidate_peaks = filter_adjacent_peak_ranges(flagged_dates_df) # filter adjacent months
-    candidate_peaks = candidate_peaks[candidate_peaks["count"] > 10] # filter low counts
+    candidate_peaks = candidate_peaks[candidate_peaks["n_texts_total"] > 5] # filter low counts
     candidate_peaks = candidate_peaks.sort_values(["actors_engaged", "count"], ascending=False) # sort by actors_engaged, then count
     candidate_peaks = candidate_peaks.iloc[0:15].reset_index(drop=True) # keep top 15
     candidate_peaks = candidate_peaks.sort_values("date").reset_index(drop=True) # sort by date
