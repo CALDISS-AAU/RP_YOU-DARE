@@ -170,6 +170,14 @@ def gen_streamgraph_peaks(results, flagged, output_dir_vis, data_path, AGG_FREQ)
             fontsize=9,
             color="black",
         )
+        ax.axvline(
+            x_peak,
+            color="black",
+            linestyle="--",
+            linewidth=0.8,
+            alpha=0.45,
+            zorder=4
+        )
 
     # labels
     ax.set_title(f"Timeline peaks based on actor engagement \n{country} - {theme}")

@@ -10,9 +10,16 @@ import json
 import multiprocessing as mp
 from collections import Counter
 from pathlib import Path
+import re
 
 import pandas as pd
 import spacy
+# pip install huspacy
+import huspacy
+
+# for translation
+import torch
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, NllbTokenizer
 
 try:
     from tqdm.auto import tqdm
@@ -21,17 +28,34 @@ except Exception:
     def tqdm(iterable=None, **kwargs):
         return iterable if iterable is not None else []
 
+
 COUNTRIES=[
-#    "RO", 
-    "SWE"
-#    "UK"
+    #"DK",
+    # "ES",
+    # "FR",
+    # "HU",
+    "IT",
+    # "RO", 
+    # "SE",
+    "UK"
 ]
 
-# Lookup dictionary for models - could be expanded.
+EXCLUDE_PATTERNS = [
+    # re.compile(r'https?:\\/\\/(?:\w+\.)?twitter\.com\\/\S+|pic.twitter.com\\/[a-zA-Z]*?\d+\w?')
+    # re.compile(r'https?:\\/\\/(?:\w+\.)?twitter\.com\\/\S+|pic.twitter.com\\/[a-zA-Z]*?\d+\w?', re.IGNORECASE),
+    re.compile(r'https?://(?:\w+\.)|pic.twitter.com/[a-zA-Z]*?\d+\w?', re.IGNORECASE)
+]
+
+# Lookup dictionary for models
 SPACY_MODELS = {
-    "RO": "ro_core_news_sm",
-    "SWE": "sv_core_news_sm",
-    "UK": "en_core_web_sm"
+    "DK": "da_core_news_sm",   # Danish
+    "ES": "es_core_news_sm",   # Spanish
+    "FR": "fr_core_news_sm",   # French
+    "HU": "hu_core_news_md",   # Hungarian # requires huspacy + huspacy.download("hu_core_news_md")
+    "IT": "it_core_news_sm",   # Italian
+    "RO": "ro_core_news_sm",   # Romanian
+    "SE": "sv_core_news_sm",   # Swedish
+    "UK": "en_core_web_sm"     # English
 }
 
 ALL_THEMES = [
@@ -39,6 +63,16 @@ ALL_THEMES = [
     "migration",
     "woke",
 ]
+
+ENGLISH_SPEAKING_ACTORS = {
+    'DK': {'Maniphesto'},
+    'SE': {'Gym XIV', 'The Golden One'}
+}
+
+LANG_MAP = {
+    'DK': 'dan_Latn',
+    'SE': 'swe_Latn'
+}
 
 # Top level parameters
 TOP_N = 4000 # number of terms to include
@@ -51,6 +85,47 @@ indexed_data_folder = "/work/YOU-DARE/controversy-mapping/sentence_filtering/ind
 reduced_data_folder = "/work/YOU-DARE/controversy-mapping/sentence_filtering/reduced_data"
 input_peaks_folder = "/work/YOU-DARE/controversy-mapping/trend-analysis/output/peaks"
 output_data_folder = "/work/YOU-DARE/controversy-mapping/trend-analysis/output/peaks" 
+
+
+# Translation stuff
+class TranslateConfig:
+    def __init__(
+        self,
+        model_name: str = "facebook/nllb-200-distilled-1.3B",
+        src_lang: str = "eng_Latn",
+        tgt_lang: str = "dan_Latn",
+        device: str | None = None,
+    ):
+        # auto-detect device
+        if device is None:
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.device = device
+
+        self.tokenizer = NllbTokenizer.from_pretrained(model_name, src_lang=src_lang)
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name, use_safetensors=True).to(self.device)
+        
+    def translate_sent(self, sentences):
+        if isinstance(sentences, str):
+            sentences = [sentences]
+    
+        inputs = self.tokenizer(
+            sentences,
+            return_tensors="pt",
+            padding=True,
+            truncation=True).to(self.device)
+        
+        with torch.no_grad():
+            translated = self.model.generate(
+                **inputs,
+                forced_bos_token_id=self.tokenizer.convert_tokens_to_ids(self.tgt_lang)
+            )
+
+        translation = self.tokenizer.batch_decode(
+            translated,
+            skip_special_tokens=True
+            )
+            
+        return translation
 
 
 def filter_dates(df: pd.DataFrame, from_date: str, to_date: str, remove_flashback=True) -> pd.DataFrame:
@@ -84,14 +159,20 @@ def filter_dates(df: pd.DataFrame, from_date: str, to_date: str, remove_flashbac
 
     return filtered
 
+def ensure_spacy_model(model_name):
+    """Download/install model once if missing."""
+    try:
+        spacy.load(model_name)
+    except OSError:
+        if model_name.startswith("hu"):
+            import huspacy
+            huspacy.download(model_name)
+        else:
+            spacy.cli.download(model_name)
 
 def load_spacy_model(model_name):
-    """Loads spacy model. Tries to download if model not present. Disables ner and parser"""
-    try:
-        nlp = spacy.load(model_name)
-    except OSError:
-        spacy.cli.download(model_name)
-        nlp = spacy.load(model_name)
+    """Load an already installed spaCy model and remove unused pipes."""
+    nlp = spacy.load(model_name)
     for component in ("ner", "parser"):
         if component in nlp.pipe_names:
             nlp.remove_pipe(component)
@@ -126,6 +207,49 @@ def chunk_text(text: str, max_chars: int = MAX_CHARS) -> list[str]:
     return chunks
 
 
+# def extract_pos(
+#     texts: list[str],
+#     nlp,
+#     max_chars: int = MAX_CHARS,
+#     batch_size: int = BATCH_SIZE,
+#     show_progress: bool = False,
+#     progress_label: str = "spaCy",
+#     ) -> Counter:
+#     """Extract NOUN/VERB/ADJ/PROPN lemmas from a list of texts using spaCy pipe."""
+
+#     counter = Counter()
+
+#     # generator function to be passed to nlp.pipe
+#     def iter_pieces():
+#         text_iter = texts
+#         if show_progress: # enables progress bar
+#             text_iter = tqdm(
+#                 texts,
+#                 total=len(texts),
+#                 desc=progress_label,
+#                 unit="text",
+#                 leave=False,
+#             )
+
+#         # generator
+#         for text in text_iter:
+#             yield from chunk_text(text, max_chars=max_chars)
+
+#     # processes texts via nlp.pipe using generator function
+#     for doc in nlp.pipe(iter_pieces(), batch_size=batch_size):
+#         for token in doc:
+#             if token.pos_ not in {"NOUN", "VERB", "ADJ", "PROPN"}:
+#                 continue
+#             lemma = (token.lemma_ or token.text).strip().lower()
+#             if not lemma or lemma in nlp.Defaults.stop_words: # uses default stopwords in spacy model
+#                 continue
+#             # Drop strings that are only punctuation and/or digits.
+#             if not any(ch.isalpha() for ch in lemma):
+#                 continue
+#             counter[lemma] += 1
+
+#     return counter
+
 def extract_pos(
     texts: list[str],
     nlp,
@@ -133,15 +257,21 @@ def extract_pos(
     batch_size: int = BATCH_SIZE,
     show_progress: bool = False,
     progress_label: str = "spaCy",
-    ) -> Counter:
-    """Extract NOUN/VERB/ADJ/PROPN lemmas from a list of texts using spaCy pipe."""
+    exclude_patterns=None,
+    ) -> tuple[Counter, Counter]:
+    """Extract NOUN/VERB/ADJ/PROPN lemmas from a list of texts using spaCy pipe.
+    
+    Returns:
+        included_counter: counted lemmas kept for final frequencies
+        excluded_counter: counted lemmas excluded by regex patterns
+    """
 
-    counter = Counter()
+    included_counter = Counter()
+    excluded_counter = Counter()
 
-    # generator function to be passed to nlp.pipe
     def iter_pieces():
         text_iter = texts
-        if show_progress: # enables progress bar
+        if show_progress:
             text_iter = tqdm(
                 texts,
                 total=len(texts),
@@ -150,41 +280,60 @@ def extract_pos(
                 leave=False,
             )
 
-        # generator
         for text in text_iter:
             yield from chunk_text(text, max_chars=max_chars)
 
-    # processes texts via nlp.pipe using generator function
     for doc in nlp.pipe(iter_pieces(), batch_size=batch_size):
         for token in doc:
             if token.pos_ not in {"NOUN", "VERB", "ADJ", "PROPN"}:
                 continue
+
             lemma = (token.lemma_ or token.text).strip().lower()
-            if not lemma or lemma in nlp.Defaults.stop_words: # uses default stopwords in spacy model
+
+            if not lemma or lemma in nlp.Defaults.stop_words:
                 continue
-            # Drop strings that are only punctuation and/or digits.
+
             if not any(ch.isalpha() for ch in lemma):
                 continue
-            counter[lemma] += 1
 
-    return counter
+            if should_exclude_lemma(lemma, exclude_patterns=exclude_patterns):
+                excluded_counter[lemma] += 1
+                continue
 
+            included_counter[lemma] += 1
+
+    return included_counter, excluded_counter
+
+# def _extract_pos_worker(
+#     texts: list[str],
+#     model_name: str,
+#     max_chars: int,
+#     batch_size: int,
+#     ) -> Counter:
+#     """Worker-wrapper to be used for parallelization."""
+#     nlp = load_spacy_model(model_name)
+#     return extract_pos(
+#         texts=texts,
+#         nlp=nlp,
+#         max_chars=max_chars,
+#         batch_size=batch_size,
+#     )
 
 def _extract_pos_worker(
     texts: list[str],
     model_name: str,
     max_chars: int,
     batch_size: int,
-    ) -> Counter:
-    """Worker-wrapper to be used for parallelization."""
+    exclude_patterns,
+    ) -> tuple[Counter, Counter]:
     nlp = load_spacy_model(model_name)
     return extract_pos(
         texts=texts,
         nlp=nlp,
         max_chars=max_chars,
         batch_size=batch_size,
+        exclude_patterns=exclude_patterns,
     )
-
 
 def _split_list(items: list[str], n_parts: int) -> list[list[str]]:
     """Divide texts in lists in equal-size chunks to be split among cpu workers."""
@@ -200,6 +349,57 @@ def _extract_pos_worker_star(args) -> Counter:
     return _extract_pos_worker(*args)
 
 
+# def extract_pos_parallel(
+#     texts: list[str],
+#     spacy_model,
+#     top_n: int = TOP_N,
+#     max_chars: int = MAX_CHARS,
+#     batch_size: int = BATCH_SIZE,
+#     cpu_count=CPU_COUNT,
+#     progress_label: str = "POS extraction",
+#     ):
+#     """Function for handling texts: split among cpu workerks, run pos-extraction"""
+#     if not texts:
+#         return []
+
+#     n_procs = max(1, min(cpu_count, len(texts))) # number of available cpu workers
+#     chunks = _split_list(texts, n_procs) # divides texts between cpu workers
+#     # NOTE: "chunks" here refers to a subcollection of texts to be processed by the same cpu worker - not a chunk as in a substring of the full text. Other variable names could be used to avoid confusion. 
+
+#     # if only one batch of texts, no need for multiprocessing 
+#     if len(chunks) == 1: 
+#         nlp = load_spacy_model(spacy_model)
+#         return extract_pos(
+#             texts=chunks[0],
+#             nlp=nlp,
+#             max_chars=max_chars,
+#             batch_size=batch_size,
+#             show_progress=True,
+#             progress_label=progress_label,
+#         ).most_common(top_n)
+
+#     # arguements for mp-version of pos-extraction
+#     tasks = [
+#         (chunk, spacy_model, max_chars, batch_size)
+#         for chunk in chunks
+#     ]
+
+#     # counter to store results
+#     merged = Counter()
+#     # run mp pos-extraction
+#     with mp.get_context("spawn").Pool(processes=len(chunks)) as pool:
+#         results = pool.imap_unordered(_extract_pos_worker_star, tasks)
+#         for counter in tqdm( # tqdm for progress bar
+#             results,
+#             total=len(tasks),
+#             desc=f"{progress_label} workers",
+#             unit="worker",
+#             leave=False,
+#         ):
+#             merged.update(counter)
+
+#     return merged.most_common(top_n)
+
 def extract_pos_parallel(
     texts: list[str],
     spacy_model,
@@ -208,80 +408,140 @@ def extract_pos_parallel(
     batch_size: int = BATCH_SIZE,
     cpu_count=CPU_COUNT,
     progress_label: str = "POS extraction",
+    exclude_patterns=None,
     ):
-    """Function for handling texts: split among cpu workerks, run pos-extraction"""
+    """Process texts in parallel and return both included and excluded term counts."""
     if not texts:
-        return []
+        return [], []
 
-    n_procs = max(1, min(cpu_count, len(texts))) # number of available cpu workers
-    chunks = _split_list(texts, n_procs) # divides texts between cpu workers
-    # NOTE: "chunks" here refers to a subcollection of texts to be processed by the same cpu worker - not a chunk as in a substring of the full text. Other variable names could be used to avoid confusion. 
+    n_procs = max(1, min(cpu_count, len(texts)))
+    chunks = _split_list(texts, n_procs)
 
-    # if only one batch of texts, no need for multiprocessing 
-    if len(chunks) == 1: 
+    if len(chunks) == 1:
         nlp = load_spacy_model(spacy_model)
-        return extract_pos(
+        included_counter, excluded_counter = extract_pos(
             texts=chunks[0],
             nlp=nlp,
             max_chars=max_chars,
             batch_size=batch_size,
             show_progress=True,
             progress_label=progress_label,
-        ).most_common(top_n)
+            exclude_patterns=exclude_patterns,
+        )
+        return included_counter.most_common(top_n), excluded_counter.most_common()
 
-    # arguements for mp-version of pos-extraction
     tasks = [
-        (chunk, spacy_model, max_chars, batch_size)
+        (chunk, spacy_model, max_chars, batch_size, exclude_patterns)
         for chunk in chunks
     ]
 
-    # counter to store results
-    merged = Counter()
-    # run mp pos-extraction
+    merged_included = Counter()
+    merged_excluded = Counter()
+
     with mp.get_context("spawn").Pool(processes=len(chunks)) as pool:
         results = pool.imap_unordered(_extract_pos_worker_star, tasks)
-        for counter in tqdm( # tqdm for progress bar
+        for included_counter, excluded_counter in tqdm(
             results,
             total=len(tasks),
             desc=f"{progress_label} workers",
             unit="worker",
             leave=False,
         ):
-            merged.update(counter)
+            merged_included.update(included_counter)
+            merged_excluded.update(excluded_counter)
 
-    return merged.most_common(top_n)
+    return merged_included.most_common(top_n), merged_excluded.most_common()
 
+# def _build_text_lookup(df_reduced: pd.DataFrame) -> dict:
+#     """Build a simple lookup table from df_reduced: entry_ID -> text."""
 
+#     text_lookup = {}
+#     for entry_id, text in zip(df_reduced["entry_ID"], df_reduced["text"]):
+#         if pd.isna(entry_id):
+#             continue
+#         text_value = str(text) if pd.notna(text) else ""
+#         text_lookup[str(entry_id)] = text_value
+#     return text_lookup
 
 def _build_text_lookup(df_reduced: pd.DataFrame) -> dict:
-    """Builds a simple lookup table from df_reduced: text_ID: text"""
+    """Build lookup table from df_reduced: entry_ID -> {'text': ..., 'actor': ...}."""
 
     text_lookup = {}
-    for text_id, text in enumerate(df_reduced["text"].tolist()):
-        text_value = str(text) if pd.notna(text) else ""
-        text_lookup[text_id] = text_value
-        text_lookup[str(text_id)] = text_value
+    for entry_id, text, actor in zip(
+        df_reduced["entry_ID"],
+        df_reduced["text"],
+        df_reduced["actor"],
+    ):
+        if pd.isna(entry_id):
+            continue
+
+        text_lookup[str(entry_id)] = {
+            "text": str(text) if pd.notna(text) else "",
+            "actor": str(actor).strip() if pd.notna(actor) else "",
+        }
+
     return text_lookup
 
+# def _texts_from_ids(entry_ids: list, text_lookup: dict):
+#     """Extract list of texts from lookup table from provided text ids"""
+#     texts = []
 
-def _texts_from_ids(text_ids: list, text_lookup: dict):
-    """Extract list of texts from lookup table from provided text ids"""
-    texts = []
+#     for entry_id in entry_ids:
 
-    for text_id in text_ids:
+#         value = text_lookup.get(str(entry_id))
+#         if not value:
+#             continue
+#         texts.append(value)
 
-        value = text_lookup.get(int(text_id), text_lookup.get(str(text_id)))
-        if not value:
+#     return texts
+
+def _texts_from_ids_by_language(
+    entry_ids: list,
+    text_lookup: dict,
+    english_actors: set[str] | None = None,
+) -> tuple[list[str], list[str]]:
+    """Split texts into english-model texts and default-model texts based on actor."""
+
+    english_actors = english_actors or set()
+    english_texts = []
+    default_texts = []
+
+    for entry_id in entry_ids:
+        record = text_lookup.get(str(entry_id))
+        if not record:
             continue
-        texts.append(value)
 
-    return texts
+        text = record.get("text", "")
+        actor = record.get("actor", "")
 
+        if not text:
+            continue
+
+        if actor in english_actors:
+            english_texts.append(text)
+        else:
+            default_texts.append(text)
+
+    return english_texts, default_texts
+    
+def should_exclude_lemma(lemma: str, exclude_patterns=None) -> bool:
+    """Return True if lemma matches any exclusion regex."""
+    if not lemma:
+        return True
+
+    if exclude_patterns is None:
+        exclude_patterns = EXCLUDE_PATTERNS
+
+    return any(pattern.search(lemma) for pattern in exclude_patterns)
 
 def process_country(COUNTRY, THEMES=ALL_THEMES):
     """Main function for processing country"""
 
     SPACY_MODEL = SPACY_MODELS.get(COUNTRY)
+    ensure_spacy_model(SPACY_MODEL)
+
+    if COUNTRY in ENGLISH_SPEAKING_ACTORS:
+        ensure_spacy_model("en_core_web_sm")
 
     # read df reduced
     reduced_data_path = Path(reduced_data_folder) / f"{COUNTRY}_reduced.jl"
@@ -320,17 +580,82 @@ def process_country(COUNTRY, THEMES=ALL_THEMES):
             ):
 
             # filter indexes by date - matched texts in peak period
-            df_filtered = filter_dates(df_indexes, from_date, to_date)
-            text_ids = df_filtered["text_ID"].tolist()
-            texts = _texts_from_ids(text_ids, text_lookup)
+            # df_filtered = filter_dates(df_indexes, from_date, to_date)
+            # entry_ids = df_filtered["entry_ID"].tolist()
+            # texts = _texts_from_ids(entry_ids, text_lookup)
 
-            # extract words
-            words = extract_pos_parallel(
-                texts=texts,
-                spacy_model=SPACY_MODEL,
-                top_n=TOP_N,
-                progress_label=f"{COUNTRY}/{theme}/peak {peak_id}",
+            # # extract words
+            # # words = extract_pos_parallel(
+            # #     texts=texts,
+            # #     spacy_model=SPACY_MODEL,
+            # #     top_n=TOP_N,
+            # #     progress_label=f"{COUNTRY}/{theme}/peak {peak_id}",
+            # # )
+            # words, excluded_words = extract_pos_parallel(
+            #     texts=texts,
+            #     spacy_model=SPACY_MODEL,
+            #     top_n=TOP_N,
+            #     progress_label=f"{COUNTRY}/{theme}/peak {peak_id}",
+            #     exclude_patterns=EXCLUDE_PATTERNS,
+            # )
+            
+            # filter indexes by date - matched texts in peak period
+            df_filtered = filter_dates(df_indexes, from_date, to_date)
+            entry_ids = df_filtered["entry_ID"].tolist()
+
+            english_actors = ENGLISH_SPEAKING_ACTORS.get(COUNTRY, set())
+            english_texts, default_texts = _texts_from_ids_by_language(
+                entry_ids,
+                text_lookup,
+                english_actors=english_actors,
             )
+
+            merged_words = Counter()
+            merged_excluded = Counter()
+
+            # translate english texts
+            if english_texts:
+                Translator = TranslateConfig(src_lang='eng_Latn')
+                if country in LANG_MAP:
+                    Translator.tgt_lang = LANG_MAP[country]
+                    translated_texts = []
+                    texts_split = [english_texts[i:i + 10] for i in range(0, len(english_texts), 10)]
+                    for split in texts_split:
+                        translated_split = Translator.translate_sent(split)
+                        translated_texts.extend(translated_split)
+
+                    default_texts.extend(translated_texts) # add to default texts
+                    english_texts = None # Set to none to ensure evaluation for presence of english-language texts is skipped after translation
+            # Only translate for supported languages
+                else:
+                    print(f"Skipping unsupported country code: {country}")
+
+            # default country-language texts
+            if default_texts:
+                words, excluded_words = extract_pos_parallel(
+                    texts=default_texts,
+                    spacy_model=SPACY_MODEL,
+                    top_n=TOP_N,
+                    progress_label=f"{COUNTRY}/{theme}/peak {peak_id} [{COUNTRY}]",
+                    exclude_patterns=EXCLUDE_PATTERNS,
+                )
+                merged_words.update(dict(words))
+                merged_excluded.update(dict(excluded_words))
+
+            # english-language texts
+            if english_texts:
+                words_en, excluded_words_en = extract_pos_parallel(
+                    texts=english_texts,
+                    spacy_model="en_core_web_sm",
+                    top_n=TOP_N,
+                    progress_label=f"{COUNTRY}/{theme}/peak {peak_id} [EN]",
+                    exclude_patterns=EXCLUDE_PATTERNS,
+                )
+                merged_words.update(dict(words_en))
+                merged_excluded.update(dict(excluded_words_en))
+
+            words = merged_words.most_common(TOP_N)
+            excluded_words = merged_excluded.most_common()
 
             # export
             output_data_dir = Path(output_data_folder) / COUNTRY / theme
@@ -339,6 +664,12 @@ def process_country(COUNTRY, THEMES=ALL_THEMES):
             pd.DataFrame(words, columns=["term", "count"]).to_csv(
                 output_data_path, index=False
             )
+
+            if excluded_words:  # only write if not empty
+                excluded_output_path = output_data_dir / f"peak_{peak_id}_excluded_terms.txt"
+                with excluded_output_path.open("w", encoding="utf-8") as f:
+                    for term, count in excluded_words:
+                        f.write(f"{term}\t{count}\n")
 
     return COUNTRY
 

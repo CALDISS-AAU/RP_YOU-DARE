@@ -16,8 +16,19 @@ import openpyxl
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 
-#INPUT_DIR = "/work/YOU-DARE/controversy-mapping/trend-analysis/output/peaks"
-INPUT_DIR = "/work/YOU-DARE/controversy-mapping/trend-analysis/output/peaks/SE/"
+COUNTRIES=[
+    #"DK",
+    # "ES",
+    # "FR",
+    # "HU",
+    "IT",
+    # "RO", 
+    # "SE",
+    "UK"
+]
+color_theme = "Paired" #"nipy_spectral"
+
+INPUT_DIR = "/work/YOU-DARE/controversy-mapping/trend-analysis/output/peaks"
 OUTPUT_DIR = "/work/YOU-DARE/controversy-mapping/trend-analysis/output/packages_for_researchers"
 
 # Function for wordcloud gen
@@ -32,7 +43,7 @@ def generate_wc(text_df, theme, peak, outpath, n_include=100):
         height=1080,
         background_color='white',
         max_words=n_include,
-        colormap='coolwarm'
+        colormap=color_theme
         ).generate_from_frequencies(
             word_freqs
             )
@@ -47,58 +58,59 @@ def generate_wc(text_df, theme, peak, outpath, n_include=100):
 
 # Main function
 def main(INPUT_DIR=INPUT_DIR):
-    
-    # as Paths
-    input_dir_path = Path(INPUT_DIR)
-    output_dir_path = Path(OUTPUT_DIR)
+    for country in COUNTRIES:
+        print(f'Country: {country}, color theme: {color_theme}')
+        # as Paths
+        input_dir_path = Path(f'{INPUT_DIR}/{country}')
+        output_dir_path = Path(OUTPUT_DIR)
 
-    # find csvs
-    csv_paths = [str(p.resolve()) for p in input_dir_path.rglob('*.csv')]
-    
-    # update to console
-    print(f"Generating wordclouds for {len(csv_paths)} files...")
+        # find csvs
+        csv_paths = [str(p.resolve()) for p in input_dir_path.rglob('*.csv')]
+        
+        # update to console
+        print(f"Generating wordclouds for {len(csv_paths)} files...")
 
-    # iter over csvs - gen wordcloud
-    if len(csv_paths) > 0:
-        for csv_path in tqdm(csv_paths):
+        # iter over csvs - gen wordcloud
+        if len(csv_paths) > 0:
+            for csv_path in tqdm(csv_paths):
 
-            p = Path(csv_path)
+                p = Path(csv_path)
 
-            # path components
-            theme = str(p.parent.name)
-            country = str(p.parent.parent.name)
-            
-            # peak component
-            p_stem = p.stem
-            peak = p_stem.replace("_term_frequencies", "")
+                # path components
+                theme = str(p.parent.name)
+                country = str(p.parent.parent.name)
+                
+                # peak component
+                p_stem = p.stem
+                peak = p_stem.replace("_term_frequencies", "")
 
-            # read words csv as data frame
-            words_df = pd.read_csv(csv_path)
-            words_df['term'] = words_df['term'].astype(str)
-            words_df = words_df.dropna()
+                # read words csv as data frame
+                words_df = pd.read_csv(csv_path)
+                words_df['term'] = words_df['term'].astype(str)
+                words_df = words_df.dropna()
 
-            # full paths for output
-            output_dir_peak = output_dir_path / country / theme / peak 
-            outpath_plot = output_dir_peak / f"{peak}_wordcloud.png"
-            outpath_xlsx = output_dir_peak / f"{peak}_term-counts.xlsx"
-            outpath_plot.parent.mkdir(parents=True, exist_ok=True) # ensure directories
-            
-            # Skips if file exist - NOTE: Comment out if clouds are to be re-generated
-            #if outpath_plot.is_file():
-            #    continue
+                # full paths for output
+                output_dir_peak = output_dir_path / country / theme / peak 
+                outpath_plot = output_dir_peak / f"{peak}_wordcloud.png"
+                outpath_xlsx = output_dir_peak / f"{peak}_term-counts.xlsx"
+                outpath_plot.parent.mkdir(parents=True, exist_ok=True) # ensure directories
+                
+                # Skips if file exist - NOTE: Comment out if clouds are to be re-generated
+                #if outpath_plot.is_file():
+                #    continue
 
-            # output excel
-            words_df_filtered = words_df.sort_values('count')
-            words_df_filtered = words_df_filtered[words_df_filtered['count'] > 1]
-            words_df_filtered.to_excel(outpath_xlsx, index=False)
+                # output excel
+                words_df_filtered = words_df.sort_values('count')
+                words_df_filtered = words_df_filtered[words_df_filtered['count'] > 1]
+                words_df_filtered.to_excel(outpath_xlsx, index=False)
 
-            # Gen wordcloud from words_df and save to outpath
-            try:
-                generate_wc(words_df, theme=theme, peak=peak, outpath=outpath_plot)
-            except TypeError:
-                raise TypeError(f"this {csv_path} is all messed up")
-    else:
-        print(f"No csvs found in {INPUT_DIR}. Skipping generating wordclouds and excel tables.")
+                # Gen wordcloud from words_df and save to outpath
+                try:
+                    generate_wc(words_df, theme=theme, peak=peak, outpath=outpath_plot)
+                except TypeError:
+                    raise TypeError(f"this {csv_path} is all messed up")
+        else:
+            print(f"No csvs found in {INPUT_DIR}. Skipping generating wordclouds and excel tables.")
 
 # run main
 if __name__ == "__main__":
