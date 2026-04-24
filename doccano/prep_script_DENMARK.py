@@ -1,7 +1,7 @@
 from .functions.functions import Doccano_Functions
 
 ''' To run this scraper from bash do the following:
-        python -m YOU-DARE.doccano.prep_script_HUNGARY
+        python -m YOU-DARE.doccano.prep_script_DENMARK
 '''
 
 doccano = Doccano_Functions()
@@ -18,19 +18,75 @@ doccano = Doccano_Functions()
            - *ey*    : Catches ey, keyword, eye, hey etc. (any word that contains 'ey')
         Naming convention : COUNTRY_keywords
 '''
-HUNGARY_keywords_raw = """
-    *LMBT*, *LGBT*, *gender*, pride*, nő*, férfi*, transz*, homo*, nemi*, nemek*, 
-    *femini*, maszkulin*, abortusz*, fiú*, lány*, anya*, apa*, anyá*, apá*, szex*, 
-    szivárvány*, leszbi*, meleg*, buzi*, csaj*, hetero*, pedofil*, normalitás*, normál*, 
-    biológia*, macsó*, performatív*, deviáns*, devianci*,
-    társadalmi, nem*, biológiai
-"""
-HUNGARY_keywords = [w.strip() for w in HUNGARY_keywords_raw.split(",")]
-
-HUNGARY_keyword_pairs = [
-    ['társadalmi', 'nem*'], 
-    ['biológiai', 'nem*']
-]
+TEST_keywords = ["#metoo",
+"abort",
+"befolkningstal",
+"biologi",
+"børn",
+"burqua",
+"demografi",
+"feminine",
+"feminisme",
+"feminister",
+"flydende",
+"fødselsrate",
+"forældre",
+"forældremyndighed",
+"homoseksuelle",
+"hormoner",
+"identitetskrise",
+"indvandrer",
+"islam",
+"islam",
+"køn",
+"kønsideologi",
+"konspiration",
+"kønsskifte",
+"kønsstudier",
+"kønsidentitet",
+"kønsskifte",
+"kriminelle",
+"kvinde",
+"kvindelige arbejde",
+"kvinder",
+"lgb",
+"lgbtq",
+"ligestilling",
+"mandlig",
+"maskulinitet",
+"mor", 
+"far",
+"muslim",
+"muslimer",
+"migration",
+"mænd",
+"omsorg",
+"opdragelse",
+"pædofil",
+"pædofili",
+"race",
+"religion",
+"remigration",
+"samtykkelov",
+"seksuel undervisning",
+"sekulær",
+"sex",
+"seksuel undervisning",
+"sexualitet",
+"sexchikane",
+"sexforbrydelse",
+"skilsmisse",
+"social kontrol",
+"sofie linde",
+"tørklæde",
+"trans",
+"transkønnede",
+"transpersoner",
+"undertrykkelse",
+"velfærdsstat",
+"voldtægt",
+"woke",
+"wokeisme"]
 
 ''' DATES:
         All dates must be on the form 'yyyy-mm-dd'
@@ -48,14 +104,10 @@ HUNGARY_keyword_pairs = [
         It is NOT a requirement to use both a from- and to-date
 '''
 
-HUNGARY_from_date = '2010-01-01'
-
 # Step 2: Find all datasets that should be prepared for doccano
-HUNGARY_data_directory = '/work/YOU-DARE/scrapers/data/Hungary' # All datasets for the TEST-country (could also be e.g. '/work/YOU-DARE/scrapers/data/TEST_COUNTRY/Telegram' if one only want to prepare telegram datasets)
-list_of_HUNGARY_dataset_paths = doccano.get_all_dataset_paths(HUNGARY_data_directory) # Finds all datasets within this folderstructure that ends with '_YT.jl', '_SPIDER.jl', '_MANUAL.jl' or '_TELEGRAM.jl'
-print(f'Keywords: {HUNGARY_keywords}\nKeyword pairs: {HUNGARY_keyword_pairs}\nAll {len(list_of_HUNGARY_dataset_paths)} directories: {list_of_HUNGARY_dataset_paths}')
+data_directory = '/work/YOU-DARE/scrapers/data/Denmark' # All datasets for the TEST-country (could also be e.g. '/work/YOU-DARE/scrapers/data/TEST_COUNTRY/Telegram' if one only want to prepare telegram datasets)
+list_of_DK_dataset_paths = doccano.get_all_dataset_paths(data_directory) # Finds all datasets within this folderstructure that ends with '_YT.jl', '_SPIDER.jl', '_MANUAL.jl' or '_TELEGRAM.jl'
 
 # Step 3: Prepare said datasets for doccano
-for dataset_path in list_of_HUNGARY_dataset_paths:
-    doccano.prepare_data_for_doccano(dataset_path, keywords=HUNGARY_keywords, keyword_pairs=HUNGARY_keyword_pairs, from_date=HUNGARY_from_date) # Prepares all datasets for doccano - OnLy required argument is a input_file_path (for more info hold over the function or have a look at the function here: /work/YOU-DARE/doccano/functions/functions.py)
-
+for dataset_path in list_of_DK_dataset_paths:
+    doccano.prepare_data_for_doccano(dataset_path, keywords=TEST_keywords) # Prepares all datasets for doccano - OnLy required argument is a input_file_path (for more info hold over the function or have a look at the function here: /work/YOU-DARE/doccano/functions/functions.py)

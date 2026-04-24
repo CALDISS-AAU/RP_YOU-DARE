@@ -1,10 +1,10 @@
 import pandas as pd
 import shutil
 
-jl_path = '/work/YOU-DARE/scrapers/data/Hungary/fidesz_videos_YT/combined_metadata.jl'
+jl_path = '/work/YOU-DARE/scrapers/data/Denmark/rasmus_munch_YT/rasmus_munch_YT.jl'
 
 df = pd.read_json(jl_path, lines=True)
-df["source"] = "Fidesz videos"          # creates the column if it didn't exist
+df["source"] = "Rasmus Munch"          # creates the column if it didn't exist
 df.to_json(jl_path, orient="records", lines=True, force_ascii=False)
 
 # print("Updated 'source' for all rows.")

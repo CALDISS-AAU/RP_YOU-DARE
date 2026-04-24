@@ -14,11 +14,6 @@ class Doccano_Functions:
         self.method = None
 
     def prepare_data_for_doccano(self, input_file_path: str, from_date=None, to_date=None, exclude_empty_dates=False, keywords=None, keyword_pairs=None, save_data=True):
-        # if keywords is None:
-        #     keywords = []
-        # if keyword_pairs is None:
-        #     keyword_pairs = [[]]
-
         # Prepares data #
         self.extract_info_from_input_file_path(input_file_path) # Extracts country and source from the input file path and saves these as instance variables
         data = self.import_data(input_file_path) # Imports the data on the input file path
@@ -190,8 +185,6 @@ class Doccano_Functions:
                         df['title'].fillna('') + '\n\n' +
                         df['text'].fillna('')
                     )
-        # else:
-        #     df['text'] = ''
 
         # Drop sub_title
         if 'sub_title' in df.columns:
@@ -309,24 +302,6 @@ class Doccano_Functions:
         ''' keyword_pairs : list of lists
             only keep words from keyword pairs in matched keywords if all words are present
         '''
-        # for row in matched_keywords_list: # matched_keywords_list = list of list, row = list for specific observation
-        #     unmatched_pair_words = set()
-        #     matched_pairs = []
-        #     if len(row) >=1: # Only look at non empty rows
-        #         print(f'All matched keywords for this row: {row}')
-        #         for pair in keyword_pairs: # keyword_pairs = list of list, pair = list
-        #             if not set(pair).issubset(row):
-        #                 for word in pair:
-        #                     if word in row:
-        #                         unmatched_pair_words.add(word)
-        #             else:
-        #                 matched_pairs.append(pair)
-        #         print(f'unmatched words: {unmatched_pair_words}, matched pairs: {matched_pairs}')
-        #         for word in list(unmatched_pair_words):
-        #             row.remove(word)
-        #         for pair in matched_pairs:
-        #             if not set(pair).issubset(row):
-        #                 row.append(pair)
 
         # Adds words from keyword pairs back into matched_keywords as single words rather than pairs
         for row in matched_keywords_list:
@@ -398,11 +373,6 @@ class Doccano_Functions:
         os.makedirs(output_dir, exist_ok=True)
         try:
             df.to_json(output_path, orient='records', lines=True)
-            # with open(output_path, 'w', encoding='utf-8') as f:
-            #     for record in df.to_dict(orient='records'):
-            #         json_line = json.dumps(record, ensure_ascii=False, separators=(',', ':'))
-            #         f.write(json_line + '\n')
-                    
             print('The data was saved successfully!')
         except Exception as e:
             print(f'Failed to save data. Error: {e}')
@@ -462,4 +432,3 @@ class Doccano_Functions:
         df = df[final_mask].sort_values(by='publication date', ascending=False, na_position='last').copy()
         df['publication date'] = df['publication date'].dt.strftime('%Y-%m-%d')
         return df
-    # Continue from here...

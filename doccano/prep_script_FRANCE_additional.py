@@ -36,3 +36,66 @@ for dataset_path in list_of_FR_dataset_paths:
         
         # save df
         doccano.save_data(sampled_df, custom_suffix="sampled")
+
+
+# Thais d something
+FR_keywords = [
+    'Genre',
+    'sexualité',
+    'sexe',
+    'masculinité',
+    'virilité',
+    'LGBT',
+    'homosexualité',
+    'transtransgenre',
+    'transidentité',
+    'transition',
+    'fluidité',
+    'mère',
+    'père',
+    'parents',
+    'parentalite',
+    'famille',
+    'enfants',
+    'mariage',
+    'démographie',
+    'hormones',
+    'PMA',
+    'procréation médicalement assistée',
+    'GPA',
+    'gestation pour autrui',
+    'femme',
+    'laïcité',
+    'religion',
+    'voile',
+    'burqua',
+    'burkini',
+    'séduction',
+    'viande',
+    'sport muscles',
+    'violences sexuelles',
+    'viol',
+    'harcèlement',
+    'harcèlement de rue',
+    'féminisme',
+    'féministes',
+    'grand remplacement',
+    'natalite',
+    'etudes de genre',
+    'salaire maternelle',
+    'travail des femmes',
+    'mères travailleuses',
+    'woke',
+    'wokisme',
+    'travail des femmes',
+    'avortement'
+    ]
+
+from_date = '2023-01-01'
+to_date = '2025-10-01'
+
+# dataset path
+thais_dataset_path = '/work/YOU-DARE/scrapers/data/France/ThaisdEscufon_YT/ThaisdEscufon_YT.jl'
+
+# 
+doccano.prepare_data_for_doccano(thais_dataset_path, keywords=FR_keywords, from_date=from_date, to_date=to_date)
