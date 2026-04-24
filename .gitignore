@@ -1,36 +1,69 @@
+# trash and backup
 .bck
 Trash/
 telepathy
-review/for-review
+scrapers_OLD
+*OLD/*
+*OLD
+doccano_OLD/data
+
+# caches
 *__pycache__*
-*.jl
+*.ipynb_checkpo*
+
+# environment files and dirs
 *miniforge3*
 *Miniforge3*
+environment
+controversy-mapping/final_plots/env
+
+# installed files and setups
+po-token
+ffmpeg*
+scrapers/ffmpeg*
+_-E4ttc-gJs.json
+
+# data directories
+scrapers/data
+doccano/data
+datafun
+various_tasks/Spain_datadump/data_*
+doccano/pilotdata
+raw-data/final_raw
+
+# output directories
+*output
+review/for-review
+controversy-mapping/sentence_filtering/english_actor_detection
+controversy-mapping/semantic-mapping/plots
+
+# file endings
 *.venv
 *.csv
 *.jsonl
+*.jsonld
+*.pkl
 *.m4a
 *.json
 *.png
 *.html
-*output
-*logs
-scrapers/logs
-scrapers/data
-scrapers_OLD
-tree.html
-doccano/data
-*.ipynb_checkpo*
-environment
-datafun
-various_tasks/Spain_datadump/data_*
-doccano/pilotdata
-po-token
-doccano_OLD/data
-ffmpeg*
-scrapers/ffmpeg*
-_-E4ttc-gJs.json
-controversy-mapping/semantic-mapping/plots
-*controversy-mapping/res
-*nohup.out
+*.docx
+*.xlsx
 *.bin
+*.zip
+*.jl
+
+# logs
+*logs
+*log.txt
+scrapers/logs
+*nohup.out
+
+# identifiers
+raw-data/mappings/actor_identifier_key
+
+# exceptions
+!raw-data/mappings/actor_mapping.json
+
+# various single files and dirs
+tree.html
