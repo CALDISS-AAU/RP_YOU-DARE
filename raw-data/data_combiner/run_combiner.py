@@ -13,7 +13,7 @@
 '''
 source ./YOU-DARE/environment/bin/activate
 cd ./YOU-DARE/raw-data/data_combiner
-python -m run_combiner --country "SE"
+python -m run_combiner --country "UK"
 '''
 
 # TODO: Perform standardization according to platform

@@ -185,6 +185,7 @@ def telegram_to_threads(posts_df, replies_df=None, paths_dict=None, sep=';') -> 
 def normalize_yt_publication_date(v):
     """
     Normalizes YouTube publication_date to 'YYYY-MM-DD'.
+    Only looks at dates collected by yt-dlp
 
     Handles:
       - int like 20250608
