@@ -1,0 +1,29 @@
+Scripts:
+extract_datasets.py:
+    Takes only relevant columns and rows with non-empty 'text'-columns from combined raw-data for each country.
+    Saves these reduced datasets in reduced_data-folder, one file pr country.
+pickle_to_txt.py:
+    Takes data on .pkl format and join all keywords from releant sub-dicts into one combined list for each theme, and joins these lists into one combined dict for each country.
+    Saves these txt's in keyword_lists-folder, one file pr country.
+keyword_matching.py:
+    Takes reduced datasets, splits texts into sentences (split on '.'), normalises publication dates and for each theme matches keywords to each sentence.
+    Saves these matched datasets in matched_data-folder, one sub-folder pr country with one file pr theme (e.g. three datasets pr country).
+index_data.py:
+    Takes matched datasets, removes all irrelevant columns and all rows without any keyword matches.
+    Then group remaining rows on text_ID (equivalent to row of text within reduced data) and combine all matched keywords into single list.
+    Saves these indexed datasets in indexed_data-folder, one sub-folder pr country with one file pr theme (e.g. three datasets pr country).
+date_filtering.py:
+    Takes indexed data and filter data on publication dates to match given peaks. 
+    Finds relevant information from reduced data row = text_ID and selects up to 15 texts pr peak pr theme pr country (round-robin on source).
+    Saves one .html-file for each text in final_data/country/theme/peak_ID/sampled_texts.
+
+
+In case of changes to raw-data and/or keywords, please run relevant script from relevant step and all scripts in later steps:
+1a) Changes to raw-data (shouldn't happen at this point!)
+    Run extract_datasets.py
+1b) Changes to keywords 
+    Run pickle_to_txt.py 
+2)  Run keyword_matching.py
+3)  Run index_data.py
+"EXTERN" STEP: Find peeks from indexed_data
+4)  Run date_filtering.py
