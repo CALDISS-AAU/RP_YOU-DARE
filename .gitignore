@@ -52,6 +52,7 @@ controversy-mapping/semantic-mapping/plots
 *.bin
 *.zip
 *.jl
+*.pdf
 
 # logs
 *logs
