@@ -1,0 +1,8 @@
+{
+  "lgb": [
+    "gayle",
+    "gaysamma"
+  ],
+  "migration": [],
+  "woke": []
+}

@@ -1,0 +1,52 @@
+{
+  "lgb": [
+    "lgb*",
+    "queer*",
+    "trans",
+    "lesbian*",
+    "gay*",
+    "homosexual*",
+    "bisex*",
+    "bigender*",
+    "intersex*",
+    "intergender*",
+    "transsex*",
+    "transex*",
+    "transperson*",
+    "transpeople*",
+    "transfolk*",
+    "nonbinar*",
+    "non-binar*",
+    "asexueal*"
+  ],
+  "migration": [
+    "remigration",
+    "deport*",
+    "repatriat*",
+    "resettlement*",
+    "great replacement",
+    "demographic replacement",
+    "population replacement"
+  ],
+  "woke": [
+    "woke",
+    "woke-*",
+    "wokeness",
+    "wokeism",
+    "wokism",
+    "political correctness",
+    "political incorrectness",
+    "politically correct",
+    "politically incorrect",
+    "gender ideolog*",
+    "cancel culture*",
+    "culture war*",
+    "culture clash*",
+    "identity politics",
+    "identity-politics",
+    "identity politic*",
+    "cultural marxis*",
+    "gender lobby*",
+    "trans lobby*"
+  ]
+}

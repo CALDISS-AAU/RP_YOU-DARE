@@ -1,0 +1,9 @@
+{
+  "lgb": [],
+  "migration": [
+    "migrantes",
+    "migrants",
+    "rimpatriata"
+  ],
+  "woke": []
+}
