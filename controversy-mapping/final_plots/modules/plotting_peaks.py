@@ -376,7 +376,7 @@ def gen_streamgraph_peaks(results, flagged, plot_path_out, data_path, AGG_FREQ):
     #ax.set_xlabel("Time", fontname="Liberation Sans")
     #ax.set_ylabel("Weights")
     #ax.xaxis.set_major_locator(mdates.YearLocator())
-    ax.xaxis.set_major_locator(mdates.MonthLocator(bymonth=[1, 7]))
+    ax.xaxis.set_major_locator(mdates.MonthLocator(bymonth=[1, 7], bymonthday=-1))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
     ax.margins(x=0.01, y=0.10)
     ax.set_yticks([])
