@@ -85,7 +85,10 @@ class EmbeddingConfig:
 
         self.model = SentenceTransformer(
             model_name,
-            model_kwargs={"dtype": dtype},
+            model_kwargs={
+                "dtype": dtype,
+                "use_safetensors": True
+                },
         )
         self.model.max_seq_length = max_seq_length
 

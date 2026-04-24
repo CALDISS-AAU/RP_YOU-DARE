@@ -42,8 +42,8 @@ def gen_semantic_map(
         
         region_add = {
             "label": str(c),
-            "x_range": (int(annoreg.get("x_start")), annoreg.get("x_end")),
-            "y_range": (int(annoreg.get("y_start")), annoreg.get("y_end"))
+            "x_range": (int(annoreg.get("x_lim_lower")), annoreg.get("x_lim_upper")),
+            "y_range": (int(annoreg.get("y_lim_lower")), annoreg.get("y_lim_upper"))
         }
 
         regions.append(region_add)
@@ -57,13 +57,13 @@ def gen_semantic_map(
             'umap_1': False,
             'umap_2': False,
             'actor': True,
-            'text_ID': True,
+            'entry_ID': True,
             'chunk': True,
         }
 
         labels = {
             'actor': 'Actor',
-            'text_ID': 'Text ID',
+            'entry_ID': 'Text ID',
             'chunk': 'Text',
         }
 

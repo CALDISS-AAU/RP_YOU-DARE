@@ -13,6 +13,8 @@ from collections import Counter
 import plotly.express as px
 import plotly.graph_objects as go
 
+TRANSLATED_ACTORS = ['Maniphesto', 'The Golden One', 'Gym XIV']
+
 @dataclass
 class DimensionConfig:
     # HDBSCAN PARAMETERS
@@ -64,13 +66,32 @@ class DimensionConfig:
 
         return self._reducer.transform(embeddings)
 
-    def plotter(self, df, actor_df, theme, output_path, by_actor=False):
+    def plotter(self, df, actor_df, theme, output_path, by_actor=False, year_cutoff_start=2015, year_cutoff_end=2026, generate_input_sheet=True):
 
         # split chunks in several lines lines
         df = df.copy()
         df['chunk'] = df['chunk'].apply(add_linebreaks)
         df['cluster'] = df['cluster'].astype(str)
-        df = df.sort_values(['cluster'])
+        df['actor'] = df['actor'].astype(str)
+        df = df.sort_values(['cluster', 'actor'])
+
+        # mark actors as translated
+        df.loc[df['actor'].isin(TRANSLATED_ACTORS), 'actor'] = df.loc[df['actor'].isin(TRANSLATED_ACTORS), 'actor'].apply(lambda name: f"{name} [translated]")
+        
+        # filter date
+        df["publication date"] = pd.to_datetime(df["publication date"], format="%Y-%m-%d") # convert to datetime - expects YYYY-MM-DD
+
+        cutoff_date_start = pd.Timestamp(year=year_cutoff_start, month=1, day=1)
+        cutoff_date_end = pd.Timestamp(year=year_cutoff_end, month=1, day=1)
+
+        df = df[(df["publication date"] >= cutoff_date_start) & (df["publication date"] < cutoff_date_end)].reset_index(drop=True)
+
+        # add year
+        year_series = pd.to_datetime(df['publication date'], errors='coerce').dt.year
+        df['year'] = year_series.astype('Int64').astype(str).replace('<NA>', 'Unknown')
+
+        # fix publication date
+        df["publication date"] = df["publication date"].dt.strftime("%Y-%m-%d")
 
         # settiings for hoverdata
         hover_data = {
@@ -78,14 +99,21 @@ class DimensionConfig:
             'umap_2': False,
             'cluster': True,
             'actor': True,
-            'text_ID': True,
+            'entry_ID': True,
             'chunk': True,
+            'publication date': True,
+            'matched words': True,
+            'platform': True
         }
+
         labels = {
             'cluster': 'Cluster',
             'actor': 'Actor',
-            'text_ID': 'Text ID',
+            'entry_ID': 'Text ID',
             'chunk': 'Text',
+            'publication date': 'Publication date',
+            'matched words': 'Matched keywords',
+            'platform': 'Platform'
         }
 
         # scatter for clusters
@@ -108,6 +136,26 @@ class DimensionConfig:
             labels=labels,
             render_mode="svg"
         )
+        # scatter for years
+        fig_year = px.scatter(
+            df,
+            x='umap_1',
+            y='umap_2',
+            color='year',
+            hover_data=hover_data,
+            labels=labels,
+            render_mode="svg"
+        )
+
+        cluster_color_map = {str(trace.name): trace.marker.color for trace in fig_cluster.data}
+        cluster_order = [str(trace.name) for trace in fig_cluster.data]
+        cluster_order.sort()
+        actor_color_map = {str(trace.name): trace.marker.color for trace in fig_actor.data}
+        actor_order = [str(trace.name) for trace in fig_actor.data]
+        actor_order.sort()
+        year_color_map = {str(trace.name): trace.marker.color for trace in fig_year.data}
+        year_order = [str(trace.name) for trace in fig_year.data]
+        year_order.sort()
 
         # draw new figure
         fig = go.Figure()
@@ -116,15 +164,59 @@ class DimensionConfig:
         cluster_visible = not by_actor
         actor_visible = by_actor
 
-        # add traces from scatters to new figure
-        for trace in fig_cluster.data:
-            trace.visible = cluster_visible
-            fig.add_trace(trace)
+        trace_metadata = []
+        actor_seen = set()
+        cluster_seen = set()
 
-        for trace in fig_actor.data:
-            trace.visible = actor_visible
-            fig.add_trace(trace)
+        # one data-trace set (actor x cluster x year) to preserve visibility across mode switches
+        for actor_name in actor_order:
+            actor_subset = df[df['actor'] == actor_name]
+            for cluster_name in cluster_order:
+                cluster_subset = actor_subset[actor_subset['cluster'] == cluster_name]
+                if cluster_subset.empty:
+                    continue
+                for year_name in year_order:
+                    subset = cluster_subset[cluster_subset['year'] == year_name].copy()
+                    if subset.empty:   
+                        continue
 
+                    showlegend_actor = actor_name not in actor_seen
+                    showlegend_cluster = cluster_name not in cluster_seen
+                    showlegend = showlegend_actor if actor_visible else showlegend_cluster
+                    trace_name = actor_name if actor_visible else cluster_name
+                    legend_group = actor_name if actor_visible else cluster_name
+                    marker_color = actor_color_map[actor_name] if actor_visible else cluster_color_map[cluster_name]
+
+
+                    platform_to_symbol = {
+                        'YouTube': 'circle',
+                        'Website': 'square',
+                        'Telegram': 'cross'
+                        }
+                    subset['symbol'] = subset['platform'].map(platform_to_symbol)
+                    fig.add_trace(
+                        go.Scatter(
+                            x=subset['umap_1'],
+                            y=subset['umap_2'],
+                            mode='markers',
+                            marker=dict(color=marker_color, symbol=subset['symbol']),
+                            name=trace_name,
+                            legendgroup=legend_group,
+                            showlegend=showlegend,
+                            customdata=subset[['cluster', 'actor', 'platform', 'publication date', 'entry_ID', 'matched words', 'chunk']].to_numpy(), # TODO: Add matched words and platform here and to hovertemplate
+                            hovertemplate='Cluster=%{customdata[0]}<br>Actor=%{customdata[1]}<br>Platform=%{customdata[2]}<br>Date=%{customdata[3]}<br>Text ID=%{customdata[4]}<br>Matched words=%{customdata[5]}<br>Text=%{customdata[6]}<extra></extra>'
+                        )
+                    )
+                    trace_metadata.append(
+                        {
+                            'actor': actor_name,
+                            'cluster': cluster_name,
+                            'year': year_name
+                        }
+                    )
+                    actor_seen.add(actor_name)
+                    cluster_seen.add(cluster_name)
+        
         # add actors
         fig.add_trace(
             go.Scatter(
@@ -143,27 +235,81 @@ class DimensionConfig:
         )
 
         # stuff for legend
-        cluster_count = len(fig_cluster.data)
-        actor_count = len(fig_actor.data)
-        always_on = [True]
+        actor_mode_showlegend = []
+        cluster_mode_showlegend = []
+        year_mode_showlegend = []
+        actor_mode_names = []
+        cluster_mode_names = []
+        year_mode_names = []
+        actor_mode_groups = []
+        cluster_mode_groups = []
+        year_mode_groups = []
+        actor_mode_colors = []
+        cluster_mode_colors = []
+        year_mode_colors = []
+        actor_seen = set()
+        cluster_seen = set()
+        year_seen = set()
 
+        for trace_info in trace_metadata:
+            actor_name = trace_info['actor']
+            cluster_name = trace_info['cluster']
+            year_name = trace_info['year']
+            actor_mode_showlegend.append(actor_name not in actor_seen)
+            cluster_mode_showlegend.append(cluster_name not in cluster_seen)
+            year_mode_showlegend.append(year_name not in year_seen)
+            actor_mode_names.append(actor_name)
+            cluster_mode_names.append(cluster_name)
+            year_mode_names.append(year_name)
+            actor_mode_groups.append(actor_name)
+            cluster_mode_groups.append(cluster_name)
+            year_mode_groups.append(year_name)
+            actor_mode_colors.append(actor_color_map[actor_name])
+            cluster_mode_colors.append(cluster_color_map[cluster_name])
+            year_mode_colors.append(year_color_map[year_name])
+            actor_seen.add(actor_name)
+            cluster_seen.add(cluster_name)
+            year_seen.add(year_name)
+
+        actor_mode_showlegend.append(True)
+        cluster_mode_showlegend.append(True)
+        year_mode_showlegend.append(True)
+        actor_mode_names.append('Actors')
+        cluster_mode_names.append('Actors')
+        year_mode_names.append('Actors')
+        actor_mode_groups.append('Actors')
+        cluster_mode_groups.append('Actors')
+        year_mode_groups.append('Actors')
+        actor_mode_colors.append('yellow')
+        cluster_mode_colors.append('yellow')
+        year_mode_colors.append('yellow')
 
         # buttons for legend toggling
         fig.update_layout(
             title=f"Text embeddings for {theme} UMAP",
-            legend=dict(title=dict(text='Actor' if by_actor else 'Cluster')),
+            uirevision='legend-state',
+            legend=dict(
+                title=dict(text='Actor' if by_actor else 'Cluster'),
+                groupclick='togglegroup'
+            ),
             updatemenus=[
                 dict(
                     type='buttons',
                     direction='left',
                     x=0.5,
                     y=1.12,
+                    active=1 if by_actor else 0,
                     buttons=[
                         dict(
                             label='Color by Cluster',
                             method='update',
                             args=[
-                                {'visible': [True] * cluster_count + [False] * actor_count + always_on},
+                                {
+                                    'showlegend': cluster_mode_showlegend,
+                                    'name': cluster_mode_names,
+                                    'legendgroup': cluster_mode_groups,
+                                    'marker.color': cluster_mode_colors
+                                },
                                 {'legend.title.text': 'Cluster'}
                             ]
                         ),
@@ -171,8 +317,26 @@ class DimensionConfig:
                             label='Color by Actor',
                             method='update',
                             args=[
-                                {'visible': [False] * cluster_count + [True] * actor_count + always_on},
+                                {
+                                    'showlegend': actor_mode_showlegend,
+                                    'name': actor_mode_names,
+                                    'legendgroup': actor_mode_groups,
+                                    'marker.color': actor_mode_colors
+                                },
                                 {'legend.title.text': 'Actor'}
+                            ]
+                        ),
+                        dict(
+                            label='Color by Year',
+                            method='update',
+                            args=[
+                                {
+                                    'showlegend': year_mode_showlegend,
+                                    'name': year_mode_names,
+                                    'legendgroup': year_mode_groups,
+                                    'marker.color': year_mode_colors
+                                },
+                                {'legend.title.text': 'Year'}
                             ]
                         ),
                     ]
@@ -181,15 +345,23 @@ class DimensionConfig:
         )
 
         # lock axis
-        x_min, x_max = df["umap_1"].min() - (0.2 * abs(df["umap_1"].min())), df["umap_1"].max() + (0.2 * abs(df["umap_1"].max()))
-        y_min, y_max = df["umap_2"].min() - (0.2 * abs(df["umap_2"].min())), df["umap_2"].max() + (0.2 * abs(df["umap_2"].max()))
+        x_range = df["umap_1"].max() - df["umap_1"].min()
+        y_range = df["umap_2"].max() - df["umap_2"].min()
+        
+        x_min, x_max = df["umap_1"].min() - (0.1 * x_range), df["umap_1"].max() + (0.1 * x_range)
+        y_min, y_max = df["umap_2"].min() - (0.1 * y_range), df["umap_2"].max() + (0.1 * y_range)
 
         fig.update_xaxes(range=[x_min, x_max], autorange=False)
         fig.update_yaxes(range=[y_min, y_max], autorange=False)
-
+        #fig.show()
+        
         # write to file
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         fig.write_html(output_path)
+
+        # generate input sheet
+        if generate_input_sheet:
+            gen_input_sheet(theme, output_path.parent)
 
 
 def add_linebreaks(text):
@@ -217,3 +389,25 @@ def add_linebreaks(text):
 
     text_return += text[prev_break:]
     return text_return
+
+def gen_input_sheet(theme, output_dir):
+
+    input_df = pd.DataFrame(
+        {
+            "area_number": pd.Series(range(1,9)),
+            "x_lim_lower": None,
+            "x_lim_upper": None,
+            "y_lim_lower": None,
+            "y_lim_upper": None,
+            "short_title": None
+            }
+    )
+
+    outpath = Path(output_dir) / "input_semantic-map-annotation.xlsx"
+    outpath.parent.mkdir(parents=True, exist_ok=True)
+
+    write_mode = "a" if outpath.exists() else "w"
+    sheet_replace_mode = "replace" if outpath.exists() else None
+
+    with pd.ExcelWriter(outpath, engine="openpyxl", mode=write_mode, if_sheet_exists=sheet_replace_mode) as writer:
+        input_df.to_excel(writer, sheet_name=theme, index=False)

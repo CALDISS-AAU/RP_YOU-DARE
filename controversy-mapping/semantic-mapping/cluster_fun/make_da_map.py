@@ -17,7 +17,13 @@ from modules.data_ingestion import read_embeddings_as_df
 from modules.clustering import DimensionConfig
 
 ## Embedding dir
-EMBEDDINGS_IN_DIR = Path("/work/YOU-DARE/controversy-mapping/semantic-mapping/output/bg-3_embeddings")
+EMBEDDINGS_IN_DIR = Path("/work/YOU-DARE/controversy-mapping/semantic-mapping/output/embeddings")
+
+## Plot output dir
+PLOT_OUT_DIR = Path("/work/YOU-DARE/controversy-mapping/semantic-mapping/plots/semantic-maps_analyze")
+
+## UMAP output dir
+UMAP_OUT_DIR = Path("/work/YOU-DARE/controversy-mapping/semantic-mapping/output/umap_positions")
 
 ## Countries and themes
 COUNTRIES = {
@@ -53,20 +59,20 @@ def makin_da_map(country, theme):
     chunked_df_embeddings = read_embeddings_as_df(chunked_path, embedding_path)
 
     # remove flashback
-    if country == "SE":
-        chunked_df_embeddings = chunked_df_embeddings[~chunked_df_embeddings['source'].str.contains('flashback', case = False)]
+    #if country == "SE":
+    #    chunked_df_embeddings = chunked_df_embeddings[~chunked_df_embeddings['source'].str.contains('flashback', case = False)]
 
     DIM_CONFIG = DimensionConfig(
         # HDBSCAN PARAMETERS
-        min_cluster_size = 40,
+        min_cluster_size = 15,
         min_samples = 1,
         metric = 'euclidean',
-        cluster_selection_epsilon = 0.1,
+        cluster_selection_epsilon = 0.0,
         cluster_selection_method = 'leaf',
         ## UMAP
         build_algo = 'auto',
-        n_neighbors = 50,
-        n_components = 30,
+        n_neighbors = 35,
+        n_components = 20,
         min_dist = 0.09,
         umap_metric = 'euclidean'
     )
@@ -96,8 +102,23 @@ def makin_da_map(country, theme):
     actor_embeddings['umap_1'] = actor_projections[:, 0]
     actor_embeddings['umap_2'] = actor_projections[:, 1]
 
+    # Export UMAP positions
+    chunks_out_df = chunked_df_embeddings[['entry_ID', 'chunk_id', 'actor', 'platform', 'cluster', 'umap_1', 'umap_2']]
+    actors_out_df = actor_embeddings[['actor', 'umap_1', 'umap_2']]
+    
+    umap_out_path = UMAP_OUT_DIR / country / f"{theme}_umap-coords.csv"
+    umap_out_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    umap_actors_out_path = UMAP_OUT_DIR / country / f"{theme}_umap-actors-coords.csv"
+    umap_actors_out_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    chunks_out_df.to_csv(umap_out_path, index=False)
+    actors_out_df.to_csv(umap_actors_out_path, index=False)
+
     # Plotting
-    DIM_CONFIG.plotter(chunked_df_embeddings , actor_df=actor_embeddings,theme=theme, output_path=f'/work/YOU-DARE/controversy-mapping/semantic-mapping/plots/bg-3_embedding_plots/{country}_{theme}_umap.html')
+    plot_out_path = PLOT_OUT_DIR / country / f"{theme}_semantic-map.html"
+    plot_out_path.parent.mkdir(parents=True, exist_ok=True)
+    DIM_CONFIG.plotter(chunked_df_embeddings , actor_df=actor_embeddings,theme=theme, output_path=plot_out_path)
 
 # main function
 def main():

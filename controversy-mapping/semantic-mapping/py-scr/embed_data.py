@@ -3,63 +3,86 @@ Pipeline for semantic mapping
 """
 
 from __future__ import annotations
-
 from pathlib import Path
 import argparse
 import sys
+import os
+sys.path.append("/work/YOU-DARE/controversy-mapping/semantic-mapping/")
+
 import warnings
-import pprint
 
 import json
 import pandas as pd
 import numpy as np
 
 from modules.data_ingestion import sentences_to_chunks,sentences_to_chunk_mp, ChunkConfig
-from modules.semantic_mapping_func import LanguageDetectionConfig, TranslateConfig, EmbeddingConfig, DimensionConfig
+from modules.semantic_mapping_func2 import LanguageDetectionConfig, TranslateConfig, EmbeddingConfig, DimensionConfig
 
 ## Embeddings outdir
-embeddings_out = Path("/work/YOU-DARE/controversy-mapping/semantic-mapping/output/bg-3_embeddings/")
+embeddings_out = Path("/work/YOU-DARE/controversy-mapping/semantic-mapping/output/embeddings/")
 embeddings_out.mkdir(parents=True, exist_ok=True)
 
 
 ## Input data
+# LGB_paths = [
+#     '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_before_false_positives/DK/DK_lgb_matched.jl',
+#     '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_before_false_positives/SE/SE_lgb_matched.jl',
+#     '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_before_false_positives/RO/RO_lgb_matched.jl'
+# ]
+
+# Migration_paths = [
+#     '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_before_false_positives/DK/DK_migration_matched.jl',
+#     '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_before_false_positives/SE/SE_migration_matched.jl',
+#     '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_before_false_positives/RO/RO_migration_matched.jl'
+# ]
+
+# woke_paths = [
+#     '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_before_false_positives/DK/DK_woke_matched.jl',
+#     '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_before_false_positives/SE/SE_woke_matched.jl',
+#     '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_before_false_positives/RO/RO_woke_matched.jl'
+# ]
+
 LGB_paths = [
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/DK/DK_lgb_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/ES/ES_lgb_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/FR/FR_lgb_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/HU/HU_lgb_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/IT/IT_lgb_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/RO/RO_lgb_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/SWE/SWE_lgb_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/UK/UK_lgb_matched.jl"
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/DK/DK_lgb_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/ES/ES_lgb_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/FR/FR_lgb_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/HU/HU_lgb_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/IT/IT_lgb_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/RO/RO_lgb_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/SE/SE_lgb_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/UK/UK_lgb_matched.jl"
 ]
 
 Migration_paths = [
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/DK/DK_migration_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/ES/ES_migration_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/FR/FR_migration_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/HU/HU_migration_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/IT/IT_migration_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/RO/RO_migration_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/SWE/SWE_migration_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/UK/UK_migration_matched.jl"
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/DK/DK_migration_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/ES/ES_migration_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/FR/FR_migration_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/HU/HU_migration_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/IT/IT_migration_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/RO/RO_migration_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/SE/SE_migration_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/UK/UK_migration_matched.jl"
 ]
 
 woke_paths = [
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/DK/DK_woke_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/ES/ES_woke_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/FR/FR_woke_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/HU/HU_woke_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/IT/IT_woke_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/RO/RO_woke_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/SWE/SWE_woke_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_OLD/UK/UK_woke_matched.jl"
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/DK/DK_woke_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/ES/ES_woke_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/FR/FR_woke_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/HU/HU_woke_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/IT/IT_woke_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/RO/RO_woke_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/SE/SE_woke_matched.jl",
+    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/UK/UK_woke_matched.jl"
 ]
 
 LANG_MAP = {
     'DK': 'dan_Latn',
-    'SWE': 'swe_Latn'
+    'SWE': 'swe_Latn',
+    'SE': 'swe_Latn'
 }
+
+ENGLISH_ACTORS = ['Maniphesto', 'The Golden One']
+ACTORS_TRANSLATE = ['Gym XIV']
 
 all_paths = LGB_paths + Migration_paths + woke_paths
 def main(year_cutoff_start=2015, year_cutoff_end=2026):
@@ -93,15 +116,17 @@ def main(year_cutoff_start=2015, year_cutoff_end=2026):
             raise IndexError(f"Filename {data_path.stem} does not match expected pattern {{ctr}}_{{theme}}_matched.jl. No theme found")
 
         keyword_col = f'matched keywords'
+        words_col = 'matched words'
 
         # SET SETTINGS FOR CHUNKING
         CONFIG_USE=ChunkConfig(
             chunk_size = 250, # Størrelse på chunk. Inkluderer sætninger indtil denne grænse overstiges
-            text_id_col = "text_ID", # navn på text id kolonne
+            text_id_col = "entry_ID", # navn på text id kolonne
             sentence_id_col = "sentence_id", # navn på sætningsid kolonne
             text_col = "text", 
             matched_col = "matched",
-            keyword_col = keyword_col
+            keyword_col = keyword_col,
+            words_col= words_col
         )
 
         # Chunk data
@@ -114,27 +139,47 @@ def main(year_cutoff_start=2015, year_cutoff_end=2026):
     LangConfig = LanguageDetectionConfig()
     # language detection by theme
     for key, chunked_df in chunked_dfs.items():
-        texts = chunked_df["chunk"].astype(str).str[:500].tolist()
-        chunked_df["lang"] = [LangConfig.detect_lang(t)[0] for t in texts]
-    
+        print(chunked_df.columns)
+        chunked_df.loc[chunked_df['actor'].isin(ENGLISH_ACTORS), 'lang'] = 'en'
+
+        mask = chunked_df['actor'].isin(ACTORS_TRANSLATE)
+
+        if not any(mask):
+            continue
+        else:
+            texts = chunked_df.loc[mask, "chunk"].astype(str).str[:500].tolist()
+            chunked_df.loc[mask, "lang"] = [LangConfig.detect_lang(t)[0] for t in texts]
+        
     # Translator configs
     Translator = TranslateConfig(src_lang='eng_Latn')
-
     for key, chunked_df in chunked_dfs.items():
 
         chunked_df["chunk_translated"] = chunked_df["chunk"]
 
         country = chunked_df['country'].iloc[0]
+        if country in LANG_MAP:
+            Translator.tgt_lang = LANG_MAP[country]
+    # Only translate for supported languages
+        else:
 
-        Translator.tgt_lang = LANG_MAP[country]
+            print(f"Skipping unsupported country code: {country}")
+            
+        continue
+
 
         mask = chunked_df["lang"] == "en"
 
         texts = chunked_df.loc[mask, 'chunk'].tolist()
 
         if texts:
-            translated = Translator.translate_sent(texts)
+            translated = []
+            texts_split = [texts[i:i + 10] for i in range(0, len(texts), 10)]
+            for split in texts_split:
+                translated_split = Translator.translate_sent(split)
+                translated.extend(translated_split)
             chunked_df.loc[mask, 'chunk_translated'] = translated
+
+    print("I translated!")
 
 
     # Embedding configs
@@ -152,6 +197,8 @@ def main(year_cutoff_start=2015, year_cutoff_end=2026):
 
         chunked_df.to_parquet(chunked_out, index=False)
         np.save(emb_out, emb)
+    
+    print("\033[92mSuccess:\033[0m \033[3mI embedded!\033[0m")
 
 if __name__ == "__main__":
     main()

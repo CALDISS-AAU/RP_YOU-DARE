@@ -5,12 +5,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from multiprocessing import Pool
 import math
+import re
 import ast
 from pathlib import Path
 from typing import Any, Iterable, List, Optional, Sequence
 
 import pandas as pd
 import numpy as np
+
+TWITTER_URLS_REGEX = re.compile(r'https?://(?:\w+\.)|pic.twitter.com/[a-zA-Z]*?\d+\w?', re.IGNORECASE)
+TWITTER_URLS_REPLACEMENT = ""
 
 @dataclass
 class ChunkConfig:
@@ -20,14 +24,15 @@ class ChunkConfig:
     Other parameters specifies expected names of columns in input data
     """
     chunk_size: int = 250
-    text_id_col: str = "text_ID"
+    text_id_col: str = "entry_ID"
     sentence_id_col: str = "sentence_id"
     text_col: str = "text"
-    matched_col: str = "matched"
-    keyword_col: Optional[str] = None
+    matched_col: Optional[str] = "matched"
+    keyword_col: Optional[str] = "mathced keywords"
+    words_col: Optional[str] = "matched words"
 
 
-def sentences_to_chunks(df, config: Optional[ChunkConfig] = None):
+def sentences_to_chunks(df, config: Optional[ChunkConfig] = None, check_columns = False):
     """
     Convert sentence-level JSONL data into text chunks around matched sentences.
 
@@ -43,16 +48,17 @@ def sentences_to_chunks(df, config: Optional[ChunkConfig] = None):
     sentence_id, text, matched. Adds:
     - chunk_id (running id within each text_id, 1-based)
     - chunk (concatenated text)
-    The matched keywords column is replaced with the unique keywords
+    The matched keywords and matched words column is replaced with the unique keywords
     found among matched sentences in the chunk.
     """
     cfg = config or ChunkConfig() # load config or use defaults
 
     # check if all required columns are present
-    required = [cfg.text_id_col, cfg.sentence_id_col, cfg.text_col, cfg.matched_col, cfg.keyword_col]
-    missing = [col for col in required if col not in df.columns]
-    if missing:
-        raise KeyError(f"Missing required columns: {missing}")
+    if check_columns:
+        required = [cfg.text_id_col, cfg.sentence_id_col, cfg.text_col, cfg.keyword_col, cfg.words_col]
+        missing = [col for col in required if col not in df.columns]
+        if missing:
+            raise KeyError(f"Missing required columns: {missing}")
 
     # list of rows to fill in
     chunk_rows = []
@@ -61,6 +67,10 @@ def sentences_to_chunks(df, config: Optional[ChunkConfig] = None):
     output_columns = _output_columns(df.columns, cfg)
 
     df[cfg.text_id_col] = df[cfg.text_id_col].apply(_safe_text) # ensures no null or missing
+
+    # add matched
+    if cfg.matched_col not in df.columns:
+        df[cfg.matched_col] = df[cfg.keyword_col].notna().astype('int')
 
     # iterate over texts in dataframe using text id column
     for text_id, group_df in df.groupby(cfg.text_id_col, sort=False):
@@ -83,6 +93,11 @@ def sentences_to_chunks(df, config: Optional[ChunkConfig] = None):
         # list of keywords
         keyword_vals = (
             group_sorted[cfg.keyword_col].tolist() if cfg.keyword_col else [None] * len(group_sorted)
+        )
+
+        # list of words
+        word_vals = (
+            group_sorted[cfg.words_col].tolist() if cfg.words_col else [None] * len(group_sorted)
         )
 
         # set for keeping track of matched sentences
@@ -116,12 +131,18 @@ def sentences_to_chunks(df, config: Optional[ChunkConfig] = None):
                 continue
             seen_matched_sets.add(matched_set)
 
-            # combine to chunk and combine keywords
+            # combine to chunk and combine words, keywords
             chunk_text = ". ".join(chunk_parts)
+            chunk_text = re.sub(TWITTER_URLS_REGEX, TWITTER_URLS_REPLACEMENT, chunk_text)
             chunk_keywords = _collect_chunk_keywords(
                 included_positions,
                 matched_flags,
                 keyword_vals,
+            )
+            chunk_words = _collect_chunk_keywords(
+                included_positions,
+                matched_flags,
+                word_vals,
             )
 
             # output row
@@ -133,6 +154,7 @@ def sentences_to_chunks(df, config: Optional[ChunkConfig] = None):
                 output_columns,
                 cfg,
                 chunk_keywords,
+                chunk_words
             )
             out_row[cfg.text_id_col] = text_id
             chunk_rows.append(out_row)
@@ -287,7 +309,8 @@ def _build_output_row(
     chunk_text,
     output_columns,
     config,
-    chunk_keywords
+    chunk_keywords,
+    chunk_words
     ):
     """
     Build row for output data frame with chunk text and relevant features/columns.
@@ -301,6 +324,8 @@ def _build_output_row(
             continue
         if config.keyword_col and col == config.keyword_col:
             row[col] = chunk_keywords
+        if config.words_col and col == config.words_col:
+            row[col] = chunk_words
         else:
             row[col] = anchor_row.get(col)
 
