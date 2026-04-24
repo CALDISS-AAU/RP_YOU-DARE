@@ -6,14 +6,14 @@ import json
 from docx import Document
 
 COUNTRIES = [
-    # "DK",
-    # "ES",
-    # "FR",
+    "DK",
+    "ES",
+    "FR",
     "HU",
-    # "IT",
-    # "RO",
-    # "SE",
-    # "UK",
+    "IT",
+    "RO",
+    "SE",
+    "UK",
 ]
 
 DATE_ORDER_BY_PAIR = {
@@ -328,6 +328,10 @@ def influencer_mapping(
             "duplicate_actor_rows_in_mapping_file": duplicate_all_actor_rows
         }
     }
+    
+    # sort: normal actors first, "Influencer" last
+    df_out['_influencer_flag'] = df_out['Actor'].str.contains('Influencer', case=False, na=False)
+    df_out = df_out.sort_values(by=['_influencer_flag', 'Actor']).drop(columns='_influencer_flag')
 
     # Drop helper column before export
     df_out = df_out.drop(columns=['Actor original'])
