@@ -27,6 +27,16 @@ ACTOR_VALUES_CORRECT = {
         "Active news": "Activenews"
 }
 
+HU_ACTORS_RENAME = {
+    "Dúró Dóra (Mi Hazánk)": "Dóra Dúró",
+    "Novák Előd (Mi Hazánk)": "Előd Novák",
+    "LH": "Legio Hungaria (LH)",
+    "Incze Béla": "Béla Incze",
+    "Budaházy Edda": "Edda Budaházy",
+    "Budaházy György": "György Budaházy",
+    "Influencer 2": "Influencer 1" # Project Legionary (original Influencer 1 omitted from analysis)
+}
+
 # actor-colour map
 def _build_actor_colour_map(country: str, actors: Sequence[str]):
     
@@ -52,7 +62,16 @@ def _build_actor_colour_map(country: str, actors: Sequence[str]):
 def _build_actor_display_map(country: str) -> dict[str, str]:
     actor_type_map_path = Path(ACTOR_IDENTIFIER_MAP_PATH)
     actor_type_df = pd.read_csv(actor_type_map_path)
+
+    # fix Marion Marechal
+    actor_type_df.loc[actor_type_df["actor"] == "Marion Marechal", "identifier"] = "Marion Marechal"
+    actor_type_df.loc[actor_type_df["actor"] == "Marion Marechal", "is_influencer"] = False
+    
     actor_type_df = actor_type_df.loc[actor_type_df["country"] == country, ["actor", "identifier"]]
+
+    # fix HU actor names
+    if country == "HU":
+        actor_type_df["identifier"] = actor_type_df["identifier"].replace(HU_ACTORS_RENAME)
 
     # sort to have influencer last
     actor_type_df = actor_type_df.sort_values(
@@ -62,7 +81,7 @@ def _build_actor_display_map(country: str) -> dict[str, str]:
 
     # order of actors
     actor_order = actor_type_df["actor"].to_list()
-
+    
     # convert to dict
     actor_display_map = actor_type_df.set_index("actor")["identifier"].to_dict()
 
@@ -181,6 +200,10 @@ def prepare_results_flagged(
     results_all_df = pd.DataFrame()
 
     for actor in df['actor'].unique():
+        # exclude Project Legionary
+        if actor == "Project Legionary":
+            continue
+
         df_actor = df[df['actor'] == actor]
 
         # n texts
@@ -205,7 +228,7 @@ def prepare_results_flagged(
     return results_all_df, flagged
 
 # main plotting function
-def gen_streamgraph_peaks(results, flagged, plot_path_out, data_path, AGG_FREQ):
+def gen_streamgraph_peaks(country, results, flagged, plot_path_out, data_path, AGG_FREQ):
     """Generate a streamgraph of smoothed within-actor monthly weights and peak labels."""
 
     required_cols = {"date", "actor", "count", "total_texts"}

@@ -12,8 +12,6 @@ from collections import Counter
 import plotly.express as px
 import plotly.graph_objects as go
 
-#from .clustering import add_linebreaks
-
 ACTOR_COLOUR_MAP_PATH = "/work/YOU-DARE/raw-data/mappings/actor_identifier_key/actor_colour_map/actor_value_colours.json"
 ACTOR_IDENTIFIER_MAP_PATH = "/work/YOU-DARE/raw-data/mappings/actor_identifier_key/actor_identifier_key.csv"
 
@@ -23,6 +21,17 @@ ACTOR_VALUES_CORRECT = {
         "Toroczkai László": "László Toroczkai",
         "Active news": "Activenews"
 }
+
+HU_ACTORS_RENAME = {
+    "Dúró Dóra (Mi Hazánk)": "Dóra Dúró",
+    "Novák Előd (Mi Hazánk)": "Előd Novák",
+    "LH": "Legio Hungaria (LH)",
+    "Incze Béla": "Béla Incze",
+    "Budaházy Edda": "Edda Budaházy",
+    "Budaházy György": "György Budaházy",
+    "Influencer 2": "Influencer 1" # Project Legionary (original Influencer 1 omitted from analysis)
+}
+
 
 def _build_actor_colour_map(country: str, actors: Sequence[str]):
     
@@ -48,17 +57,25 @@ def _build_actor_colour_map(country: str, actors: Sequence[str]):
 def _build_actor_display_map(country: str) -> dict[str, str]:
     actor_type_map_path = Path(ACTOR_IDENTIFIER_MAP_PATH)
     actor_type_df = pd.read_csv(actor_type_map_path)
+    # fix Marion Marechal
+    actor_type_df.loc[actor_type_df["actor"] == "Marion Marechal", "identifier"] = "Marion Marechal"
+    actor_type_df.loc[actor_type_df["actor"] == "Marion Marechal", "is_influencer"] = False
+
     actor_type_df = actor_type_df.loc[actor_type_df["country"] == country, ["actor", "identifier"]]
     
+    # fix HU actor names
+    if country == "HU":
+        actor_type_df["identifier"] = actor_type_df["identifier"].replace(HU_ACTORS_RENAME)
+
     # sort to have influencer last
     actor_type_df = actor_type_df.sort_values(
         by="identifier",
         key=lambda s: list(zip(s.str.startswith("Influencer"), s))
     )
-
+    
     # order of actors
     actor_order = actor_type_df["actor"].to_list()
-
+    
     # convert to dict
     actor_display_map = actor_type_df.set_index("actor")["identifier"].to_dict()
 
@@ -259,7 +276,18 @@ def gen_semantic_map(
 
     # correct actor values
     df["actor"] = df["actor"].replace(ACTOR_VALUES_CORRECT)
+    actor_with_umap_df["actor"] = actor_with_umap_df["actor"].replace(ACTOR_VALUES_CORRECT)
 
+    # exclude Project Legionary
+    if country == "HU":
+        actor_with_umap_df = actor_with_umap_df[actor_with_umap_df["actor"] != "Project Legionary"]
+        df = df[df["actor"] != "Project Legionary"]
+
+    # fix wrong actor name for HU
+    if country == "HU":
+        actor_with_umap_df["actor"] = actor_with_umap_df["actor"].replace({"Mi Hazánk": "Dúró Dóra (Mi Hazánk)"})
+        actor_with_umap_df = actor_with_umap_df.groupby("actor").mean().reset_index()
+        
     # derive colours and identifiers
     actor_colour_map = _build_actor_colour_map(country, df["actor"].unique().tolist())
     actor_identifier_map, actor_order = _build_actor_display_map(country)

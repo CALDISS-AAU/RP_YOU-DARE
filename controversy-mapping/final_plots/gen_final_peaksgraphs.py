@@ -89,6 +89,7 @@ def generate(country, theme):
 
     # streamgraph
     gen_streamgraph_peaks(
+        country,
         results, 
         flagged, 
         plot_path_out=plot_path_out,
