@@ -91,10 +91,4 @@ gym_xiv_new_dataset_paths = doccano.get_all_dataset_paths(gym_xiv_new_dir)
 for dataset_path in list_of_golden_one_dataset_paths:
     doccano.prepare_data_for_doccano(dataset_path, keywords=keywords_2, from_date=SE_from_date, to_date=SE_to_date)
 
-# ### Aktivklubb sverige TELEGRAM ###
-# Aktivklubb_dir = '/work/YOU-DARE/scrapers/data/Sweden/Telegram/AktivklubbSverige'
-# list_aktivklubb_dataset_paths = doccano.get_all_dataset_paths(Aktivklubb_dir)
-
-# for dataset_path in list_of_golden_one_dataset_paths:
-#     doccano.prepare_data_for_doccano(dataset_path, keywords=keywords_SE, from_date=SE_from_date, to_date=SE_to_date)
 

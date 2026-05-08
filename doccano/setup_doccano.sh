@@ -6,4 +6,4 @@
 pip install --upgrade pip # opgraderer pip
 
 # OBS! Nedenstående linje skal rettes så stien passer med projektet
-pip install -r /work/YOU-DARE/doccano/requirements_doccano.txt
+pip install -r ./path/to/YOU-DARE_doccano-folder/requirements_doccano.txt
