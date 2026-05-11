@@ -227,8 +227,8 @@ def save_data(df, output_path, country=''):
         print(f'Failed to save data - {country}. Error: {e}')
 
 for country in all_countries:
-    full_dataset_path = f'{full_datasets_folder_path}{country}{full_datasets_file_ending}'
-    reduced_dataset_path = f'{reduced_datasets_folder_path}{country}{reduced_datasets_file_ending}'
+    full_dataset_path = f'{full_datasets_folder_path}/{country}{full_datasets_file_ending}'
+    reduced_dataset_path = f'{reduced_datasets_folder_path}/{country}{reduced_datasets_file_ending}'
 
     full_dataset = import_data(full_dataset_path, country=country) # Imports the data on the file path
     if not full_dataset:

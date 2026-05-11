@@ -266,21 +266,21 @@ def save_data(df, output_path, country=''):
 def process_country(country: str):
     print(f'Processing {country}')
 
-    keyword_lists_dir = f'{keyword_lists_folder_path}{country}{keyword_lists_file_ending}'
+    keyword_lists_dir = f'{keyword_lists_folder_path}/{country}{keyword_lists_file_ending}'
     keyword_lists_local = import_keywords(keyword_lists_dir, country=country)
 
-    keyword_lists_uk_dir = f'{keyword_lists_folder_path}UK{keyword_lists_file_ending}'
+    keyword_lists_uk_dir = f'{keyword_lists_folder_path}/UK{keyword_lists_file_ending}'
     keyword_lists_uk = import_keywords(keyword_lists_uk_dir, country='UK')
 
-    false_positives_local_dir = f'{false_positives_lists_folder_path}{country}{false_positives_lists_file_ending}'
+    false_positives_local_dir = f'{false_positives_lists_folder_path}/{country}{false_positives_lists_file_ending}'
     false_positives_local = import_false_positives(false_positives_local_dir, country=country)
 
-    false_positives_uk_dir = f'{false_positives_lists_folder_path}UK{false_positives_lists_file_ending}'
+    false_positives_uk_dir = f'{false_positives_lists_folder_path}/UK{false_positives_lists_file_ending}'
     false_positives_uk = import_false_positives(false_positives_uk_dir, country='UK')
 
     english_actor_set = english_speaking_actors.get(country, set())
 
-    dataset_dir = f'{datasets_folder_path}{country}{datasets_file_ending}'
+    dataset_dir = f'{datasets_folder_path}/{country}{datasets_file_ending}'
 
     dataset = import_data(dataset_dir, country=country)
     if not dataset:
