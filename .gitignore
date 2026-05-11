@@ -6,6 +6,7 @@ scrapers_OLD
 *OLD/*
 *OLD
 doccano_OLD/data
+controversy-mapping/depr/
 
 # caches
 *__pycache__*
@@ -30,6 +31,8 @@ datafun
 various_tasks/Spain_datadump/data_*
 doccano/pilotdata
 raw-data/final_raw
+controversy-mapping/data/matched-texts
+controversy-mapping/data/sentence-data
 
 # output directories
 *output
