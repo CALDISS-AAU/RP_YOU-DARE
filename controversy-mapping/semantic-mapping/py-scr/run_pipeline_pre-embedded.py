@@ -107,7 +107,7 @@ def main():
         actor_embeddings['umap_2'] = actor_projections[:, 1]
 
         # Plotting
-        DIM_CONFIG.plotter(theme_df , actor_df=actor_embeddings,theme=theme, output_path=fstr(REPO_ROOT / "controversy-mapping" / "semantic-mapping" / "plots" / "kgk" / f"{theme}_umap.html"))
+        DIM_CONFIG.plotter(theme_df , actor_df=actor_embeddings,theme=theme, output_path=str(REPO_ROOT / "controversy-mapping" / "semantic-mapping" / "plots" / "kgk" / f"{theme}_umap.html"))
 
 if __name__ == "__main__":
     main()

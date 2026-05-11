@@ -379,7 +379,7 @@ log_data = {}
 actor_mapping_log_data = {}
 
 for country in COUNTRIES:
-    input_file = fstr(REPO_ROOT / "raw-data" / "final_raw" / f"{country}_YOUDARE-WEBDATA_combined.jsonl")
+    input_file = str(REPO_ROOT / "raw-data" / "final_raw" / f"{country}_YOUDARE-WEBDATA_combined.jsonl")
     output_csv = os.path.join(OUTPUT_DIR, f"{country}_data_contents.csv")
     output_docx = os.path.join(OUTPUT_DIR, f"{country}_data_contents.docx")
 

@@ -382,7 +382,7 @@ class Doccano_Functions:
             return r'\s' + re.escape(pattern) + r'(\s|\.|\,)'
 
     def save_data(self, df, custom_suffix=None):
-        output_dir = fstr(REPO_ROOT / "doccano" / "data" / f"{self.country}")
+        output_dir = str(REPO_ROOT / "doccano" / "data" / f"{self.country}")
 
         if custom_suffix:
             output_path = f'{output_dir}/data_{self.country}_{self.source}_{self.method}_{custom_suffix}_anno.jl'
