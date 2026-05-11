@@ -22,26 +22,6 @@ from modules.semantic_mapping_func2 import LanguageDetectionConfig, TranslateCon
 embeddings_out = Path("/work/YOU-DARE/controversy-mapping/semantic-mapping/output/embeddings/")
 embeddings_out.mkdir(parents=True, exist_ok=True)
 
-
-## Input data
-# LGB_paths = [
-#     '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_before_false_positives/DK/DK_lgb_matched.jl',
-#     '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_before_false_positives/SE/SE_lgb_matched.jl',
-#     '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_before_false_positives/RO/RO_lgb_matched.jl'
-# ]
-
-# Migration_paths = [
-#     '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_before_false_positives/DK/DK_migration_matched.jl',
-#     '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_before_false_positives/SE/SE_migration_matched.jl',
-#     '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_before_false_positives/RO/RO_migration_matched.jl'
-# ]
-
-# woke_paths = [
-#     '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_before_false_positives/DK/DK_woke_matched.jl',
-#     '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_before_false_positives/SE/SE_woke_matched.jl',
-#     '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data_before_false_positives/RO/RO_woke_matched.jl'
-# ]
-
 LGB_paths = [
     "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/DK/DK_lgb_matched.jl",
     "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/ES/ES_lgb_matched.jl",

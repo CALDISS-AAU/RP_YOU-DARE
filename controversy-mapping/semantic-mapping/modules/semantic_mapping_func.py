@@ -10,7 +10,7 @@ import numpy as np
 import torch
 import fasttext
 import transformers
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, NllbTokenizer
 from sentence_transformers import SentenceTransformer
 import huggingface_hub
 from cuml.manifold import UMAP
@@ -47,15 +47,13 @@ class TranslateConfig:
             device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.device = device
 
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name).to(self.device)
-
+        self.tokenizer = NllbTokenizer.from_pretrained(model_name, src_lang=src_lang)
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name, use_safetensors=True).to(self.device)
+        
     def translate_sent(self, sentences):
         if isinstance(sentences, str):
             sentences = [sentences]
-        
-        self.tokenizer.src_lang = self.src_lang
-
+    
         inputs = self.tokenizer(
             sentences,
             return_tensors="pt",
@@ -65,7 +63,7 @@ class TranslateConfig:
         with torch.no_grad():
             translated = self.model.generate(
                 **inputs,
-                forced_bos_token_id=tokenizer.convert_tokens_to_ids(self.tgt_lang)
+                forced_bos_token_id=self.tokenizer.convert_tokens_to_ids(self.tgt_lang)
             )
 
         translation = self.tokenizer.batch_decode(
@@ -87,7 +85,10 @@ class EmbeddingConfig:
 
         self.model = SentenceTransformer(
             model_name,
-            model_kwargs={"dtype": dtype},
+            model_kwargs={
+                "dtype": dtype,
+                "use_safetensors": True
+                },
         )
         self.model.max_seq_length = max_seq_length
 

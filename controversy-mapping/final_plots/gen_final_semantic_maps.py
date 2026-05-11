@@ -16,7 +16,7 @@ import numpy as np
 from modules.plotting import gen_semantic_map
 
 ## DATA DIRS
-UMAP_IN_DIR = Path("/work/YOU-DARE/controversy-mapping/semantic-mapping/output/used_positions_mar20/umap_positions") # Path to dir with chunk and actor UMAP coordinates
+UMAP_IN_DIR = Path("/work/YOU-DARE/controversy-mapping/final_plots/input_data/used_positions_mar20/umap_positions") # Path to dir with chunk and actor UMAP coordinates
 REGIONS_IN_DIR = Path("/work/YOU-DARE/controversy-mapping/final_plots/input_data/D2.1 Socio-symbolic maps") # Path to dir with regions to annotate
 MAPS_OUT_DIR = Path("/work/YOU-DARE/controversy-mapping/final_plots/plots/socio-semantic-maps_deliverable")
 #MAPS_OUT_DIR = Path("/work/YOU-DARE/controversy-mapping/final_plots/plots/socio-semantic-maps_test")
