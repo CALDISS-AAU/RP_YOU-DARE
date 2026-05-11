@@ -1,11 +1,11 @@
 
-# Web Scraped Content Datasets for YOU-DARE Far-Right Gender Controversy Mapping
+# Web Scraped Content Datasets for YOU-DARE Far-Right Gender Controversy Mapping (YD-WSCD)
 
 [toc]
 
 ## 1. Introduction
 
-This report provides documentation for the data collection "Web Scraped Content Datasets for YOU-DARE Far-Right Gender Controversy Mapping", collected as part of the [Horizon Europe YOU-DARE project](https://cordis.europa.eu/project/id/101178147). The purpose of this document is to describe data contents as well as how data was collected, what types of data were produced, and which tools and techniques were used. The report is intended as methodological documentation rather than a code-level manual. Therefore, the focus is on general approaches, assumptions, and design decisions rather than implementation details.
+This report provides documentation for the data collection "Web Scraped Content Datasets for YOU-DARE Far-Right Gender Controversy Mapping", or "YD-WSCD" for short, collected as part of the [Horizon Europe YOU-DARE project](https://cordis.europa.eu/project/id/101178147). The purpose of this document is to describe data contents as well as how data was collected, what types of data were produced, and which tools and techniques were used. The report is intended as methodological documentation rather than a code-level manual. Therefore, the focus is on general approaches, assumptions, and design decisions rather than implementation details.
 
 All data collection and curation was done by [CALDISS at Aalborg University](https://www.en.caldiss.aau.dk/).
 
