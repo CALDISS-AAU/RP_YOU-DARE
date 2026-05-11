@@ -223,50 +223,6 @@ def chunk_text(text: str, max_chars: int = MAX_CHARS) -> list[str]:
 
     return chunks
 
-
-# def extract_pos(
-#     texts: list[str],
-#     nlp,
-#     max_chars: int = MAX_CHARS,
-#     batch_size: int = BATCH_SIZE,
-#     show_progress: bool = False,
-#     progress_label: str = "spaCy",
-#     ) -> Counter:
-#     """Extract NOUN/VERB/ADJ/PROPN lemmas from a list of texts using spaCy pipe."""
-
-#     counter = Counter()
-
-#     # generator function to be passed to nlp.pipe
-#     def iter_pieces():
-#         text_iter = texts
-#         if show_progress: # enables progress bar
-#             text_iter = tqdm(
-#                 texts,
-#                 total=len(texts),
-#                 desc=progress_label,
-#                 unit="text",
-#                 leave=False,
-#             )
-
-#         # generator
-#         for text in text_iter:
-#             yield from chunk_text(text, max_chars=max_chars)
-
-#     # processes texts via nlp.pipe using generator function
-#     for doc in nlp.pipe(iter_pieces(), batch_size=batch_size):
-#         for token in doc:
-#             if token.pos_ not in {"NOUN", "VERB", "ADJ", "PROPN"}:
-#                 continue
-#             lemma = (token.lemma_ or token.text).strip().lower()
-#             if not lemma or lemma in nlp.Defaults.stop_words: # uses default stopwords in spacy model
-#                 continue
-#             # Drop strings that are only punctuation and/or digits.
-#             if not any(ch.isalpha() for ch in lemma):
-#                 continue
-#             counter[lemma] += 1
-
-#     return counter
-
 def extract_pos(
     texts: list[str],
     nlp,
@@ -321,20 +277,6 @@ def extract_pos(
 
     return included_counter, excluded_counter
 
-# def _extract_pos_worker(
-#     texts: list[str],
-#     model_name: str,
-#     max_chars: int,
-#     batch_size: int,
-#     ) -> Counter:
-#     """Worker-wrapper to be used for parallelization."""
-#     nlp = load_spacy_model(model_name)
-#     return extract_pos(
-#         texts=texts,
-#         nlp=nlp,
-#         max_chars=max_chars,
-#         batch_size=batch_size,
-#     )
 
 def _extract_pos_worker(
     texts: list[str],
@@ -365,57 +307,6 @@ def _extract_pos_worker_star(args) -> Counter:
     """Wrapper to allow for additional arguements"""
     return _extract_pos_worker(*args)
 
-
-# def extract_pos_parallel(
-#     texts: list[str],
-#     spacy_model,
-#     top_n: int = TOP_N,
-#     max_chars: int = MAX_CHARS,
-#     batch_size: int = BATCH_SIZE,
-#     cpu_count=CPU_COUNT,
-#     progress_label: str = "POS extraction",
-#     ):
-#     """Function for handling texts: split among cpu workerks, run pos-extraction"""
-#     if not texts:
-#         return []
-
-#     n_procs = max(1, min(cpu_count, len(texts))) # number of available cpu workers
-#     chunks = _split_list(texts, n_procs) # divides texts between cpu workers
-#     # NOTE: "chunks" here refers to a subcollection of texts to be processed by the same cpu worker - not a chunk as in a substring of the full text. Other variable names could be used to avoid confusion. 
-
-#     # if only one batch of texts, no need for multiprocessing 
-#     if len(chunks) == 1: 
-#         nlp = load_spacy_model(spacy_model)
-#         return extract_pos(
-#             texts=chunks[0],
-#             nlp=nlp,
-#             max_chars=max_chars,
-#             batch_size=batch_size,
-#             show_progress=True,
-#             progress_label=progress_label,
-#         ).most_common(top_n)
-
-#     # arguements for mp-version of pos-extraction
-#     tasks = [
-#         (chunk, spacy_model, max_chars, batch_size)
-#         for chunk in chunks
-#     ]
-
-#     # counter to store results
-#     merged = Counter()
-#     # run mp pos-extraction
-#     with mp.get_context("spawn").Pool(processes=len(chunks)) as pool:
-#         results = pool.imap_unordered(_extract_pos_worker_star, tasks)
-#         for counter in tqdm( # tqdm for progress bar
-#             results,
-#             total=len(tasks),
-#             desc=f"{progress_label} workers",
-#             unit="worker",
-#             leave=False,
-#         ):
-#             merged.update(counter)
-
-#     return merged.most_common(top_n)
 
 def extract_pos_parallel(
     texts: list[str],
@@ -469,16 +360,6 @@ def extract_pos_parallel(
 
     return merged_included.most_common(top_n), merged_excluded.most_common()
 
-# def _build_text_lookup(df_reduced: pd.DataFrame) -> dict:
-#     """Build a simple lookup table from df_reduced: entry_ID -> text."""
-
-#     text_lookup = {}
-#     for entry_id, text in zip(df_reduced["entry_ID"], df_reduced["text"]):
-#         if pd.isna(entry_id):
-#             continue
-#         text_value = str(text) if pd.notna(text) else ""
-#         text_lookup[str(entry_id)] = text_value
-#     return text_lookup
 
 def _build_text_lookup(df_reduced: pd.DataFrame) -> dict:
     """Build lookup table from df_reduced: entry_ID -> {'text': ..., 'actor': ...}."""
@@ -498,19 +379,6 @@ def _build_text_lookup(df_reduced: pd.DataFrame) -> dict:
         }
 
     return text_lookup
-
-# def _texts_from_ids(entry_ids: list, text_lookup: dict):
-#     """Extract list of texts from lookup table from provided text ids"""
-#     texts = []
-
-#     for entry_id in entry_ids:
-
-#         value = text_lookup.get(str(entry_id))
-#         if not value:
-#             continue
-#         texts.append(value)
-
-#     return texts
 
 def _texts_from_ids_by_language(
     entry_ids: list,
@@ -595,26 +463,6 @@ def process_country(COUNTRY, THEMES=ALL_THEMES):
             unit="peak",
             leave=False,
             ):
-
-            # filter indexes by date - matched texts in peak period
-            # df_filtered = filter_dates(df_indexes, from_date, to_date)
-            # entry_ids = df_filtered["entry_ID"].tolist()
-            # texts = _texts_from_ids(entry_ids, text_lookup)
-
-            # # extract words
-            # # words = extract_pos_parallel(
-            # #     texts=texts,
-            # #     spacy_model=SPACY_MODEL,
-            # #     top_n=TOP_N,
-            # #     progress_label=f"{COUNTRY}/{theme}/peak {peak_id}",
-            # # )
-            # words, excluded_words = extract_pos_parallel(
-            #     texts=texts,
-            #     spacy_model=SPACY_MODEL,
-            #     top_n=TOP_N,
-            #     progress_label=f"{COUNTRY}/{theme}/peak {peak_id}",
-            #     exclude_patterns=EXCLUDE_PATTERNS,
-            # )
             
             # filter indexes by date - matched texts in peak period
             df_filtered = filter_dates(df_indexes, from_date, to_date)
