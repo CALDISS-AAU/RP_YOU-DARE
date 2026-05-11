@@ -1,4 +1,23 @@
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 from .functions.functions import Doccano_Functions
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 ''' To run this scraper from bash do the following:
         python -m YOU-DARE.doccano.prep_script_DENMARK
@@ -107,7 +126,7 @@ TEST_keywords = [
 '''
 
 # Step 2: Find all datasets that should be prepared for doccano
-data_directory = '/work/YOU-DARE/scrapers/data/Denmark' # All datasets for the TEST-country (could also be e.g. '/work/YOU-DARE/scrapers/data/TEST_COUNTRY/Telegram' if one only want to prepare telegram datasets)
+data_directory = str(REPO_ROOT / "scrapers" / "data" / "Denmark") # All datasets for the TEST-country (could also be e.g. str(REPO_ROOT / "scrapers" / "data" / "TEST_COUNTRY" / "Telegram") if one only want to prepare telegram datasets)
 list_of_DK_dataset_paths = doccano.get_all_dataset_paths(data_directory) # Finds all datasets within this folderstructure that ends with '_YT.jl', '_SPIDER.jl', '_MANUAL.jl' or '_TELEGRAM.jl'
 
 # Step 3: Prepare said datasets for doccano

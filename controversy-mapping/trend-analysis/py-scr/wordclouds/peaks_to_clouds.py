@@ -1,8 +1,10 @@
 """Convert word frequency csvs to wordclouds"""
 
 from __future__ import annotations
-
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 import argparse
 import sys
 import warnings
@@ -16,6 +18,21 @@ import openpyxl
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
+
 COUNTRIES=[
     #"DK",
     # "ES",
@@ -28,8 +45,8 @@ COUNTRIES=[
 ]
 color_theme = "Paired" #"nipy_spectral"
 
-INPUT_DIR = "/work/YOU-DARE/controversy-mapping/trend-analysis/output/peaks"
-OUTPUT_DIR = "/work/YOU-DARE/controversy-mapping/trend-analysis/output/packages_for_researchers"
+INPUT_DIR = str(REPO_ROOT / "controversy-mapping" / "trend-analysis" / "output" / "peaks")
+OUTPUT_DIR = str(REPO_ROOT / "controversy-mapping" / "trend-analysis" / "output" / "packages_for_researchers")
 
 # Function for wordcloud gen
 def generate_wc(text_df, theme, peak, outpath, n_include=100):

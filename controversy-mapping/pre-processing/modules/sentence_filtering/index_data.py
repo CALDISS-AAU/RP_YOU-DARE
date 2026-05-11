@@ -1,6 +1,24 @@
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 import pandas as pd
 import json
-from pathlib import Path
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 all_countries = [
     'DK',
@@ -19,7 +37,7 @@ all_themes = [
     'woke'
 ]
 
-input_folder = '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data'
+input_folder = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data")
 
 def merge_unique_keywords(series):
     seen = set()
@@ -32,7 +50,7 @@ def merge_unique_keywords(series):
     return merged
 
 for country in all_countries:
-    output_folder = f'/work/YOU-DARE/controversy-mapping/sentence_filtering/indexed_data/{country}'
+    output_folder = fstr(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "indexed_data" / f"{country}")
     for theme in all_themes:
         input_file_path = f'{input_folder}/{country}/{country}_{theme}_matched.jl'
         print(input_file_path)

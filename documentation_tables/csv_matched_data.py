@@ -1,4 +1,7 @@
+from pathlib import Path
 import os
+from dotenv import load_dotenv
+
 import glob
 import csv
 import json
@@ -7,8 +10,23 @@ import pandas as pd
 import dateparser
 from docx import Document
 
-RAW_DIR = "/work/YOU-DARE/raw-data/final_raw"
-INDEXED_DIR = "/work/YOU-DARE/controversy-mapping/sentence_filtering/indexed_data"
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
+
+RAW_DIR = str(REPO_ROOT / "raw-data" / "final_raw")
+INDEXED_DIR = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "indexed_data")
 
 COUNTRIES = [
     "DK",
@@ -21,12 +39,12 @@ COUNTRIES = [
     "UK",
 ]
 
-OUTPUT_CSV = "/work/YOU-DARE/documentation_tables/csv_tables_matched/matched_texts.csv"
-OUTPUT_DOCX = "/work/YOU-DARE/documentation_tables/csv_tables_matched/matched_texts.docx"
-OUTPUT_LOG = "/work/YOU-DARE/documentation_tables/csv_tables_matched/matched_texts_log.txt"
-OUTPUT_DATE_LOG = "/work/YOU-DARE/documentation_tables/csv_tables_matched/matched_texts_date_log.csv"
-OUTPUT_DATE_LOG_JSON = "/work/YOU-DARE/documentation_tables/csv_tables_matched/matched_texts_date_log_nested.json"
-OUTPUT_DATE_LOG_TXT_DIR = "/work/YOU-DARE/documentation_tables/csv_tables_matched/date_logs_by_country"
+OUTPUT_CSV = str(REPO_ROOT / "documentation_tables" / "csv_tables_matched" / "matched_texts.csv")
+OUTPUT_DOCX = str(REPO_ROOT / "documentation_tables" / "csv_tables_matched" / "matched_texts.docx")
+OUTPUT_LOG = str(REPO_ROOT / "documentation_tables" / "csv_tables_matched" / "matched_texts_log.txt")
+OUTPUT_DATE_LOG = str(REPO_ROOT / "documentation_tables" / "csv_tables_matched" / "matched_texts_date_log.csv")
+OUTPUT_DATE_LOG_JSON = str(REPO_ROOT / "documentation_tables" / "csv_tables_matched" / "matched_texts_date_log_nested.json")
+OUTPUT_DATE_LOG_TXT_DIR = str(REPO_ROOT / "documentation_tables" / "csv_tables_matched" / "date_logs_by_country")
 
 # Inclusive date range
 START_DATE = pd.Timestamp("2015-01-01")

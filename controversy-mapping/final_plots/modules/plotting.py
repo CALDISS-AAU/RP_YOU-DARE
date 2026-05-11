@@ -1,8 +1,10 @@
 from __future__ import annotations
+from pathlib import Path
+import os
+from dotenv import load_dotenv
 
 from dataclasses import dataclass
 import json
-from pathlib import Path
 from typing import Any, Iterable, List, Optional, Sequence
 
 import pandas as pd
@@ -12,8 +14,23 @@ from collections import Counter
 import plotly.express as px
 import plotly.graph_objects as go
 
-ACTOR_COLOUR_MAP_PATH = "/work/YOU-DARE/raw-data/mappings/actor_identifier_key/actor_colour_map/actor_value_colours.json"
-ACTOR_IDENTIFIER_MAP_PATH = "/work/YOU-DARE/raw-data/mappings/actor_identifier_key/actor_identifier_key.csv"
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
+
+ACTOR_COLOUR_MAP_PATH = str(REPO_ROOT / "raw-data" / "mappings" / "actor_identifier_key" / "actor_colour_map" / "actor_value_colours.json")
+ACTOR_IDENTIFIER_MAP_PATH = str(REPO_ROOT / "raw-data" / "mappings" / "actor_identifier_key" / "actor_identifier_key.csv")
 
 ACTOR_VALUES_CORRECT = {
         "Rasmus Munch": "Rasmus Munch Søndergaard",

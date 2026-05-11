@@ -1,8 +1,26 @@
-import json
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+import json
 
 import langid
 import pandas as pd
+
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
 
 
 all_countries = [
@@ -15,12 +33,10 @@ all_countries = [
     'SE'
 ]
 
-input_dir = Path('/work/YOU-DARE/controversy-mapping/sentence_filtering/reduced_data')
+input_dir = REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "reduced_data"
 input_file_ending = '_reduced.jl'
 
-output_path = Path(
-    '/work/YOU-DARE/controversy-mapping/sentence_filtering/english_actor_detection/english_actor_summary.txt'
-)
+output_path = REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "english_actor_detection" / "english_actor_summary.txt"
 output_path.parent.mkdir(parents=True, exist_ok=True)
 
 

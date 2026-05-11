@@ -1,8 +1,10 @@
 """Run anomaly detection on trend data."""
 
 from __future__ import annotations
-
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 import argparse
 import sys
 import warnings
@@ -16,6 +18,21 @@ import plotly.express as px
 
 from modules.anomaly_detection import AnomalyConfig, _find_peaks
 from modules.plotters import gen_streamgraph_peaks
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 # SET SETTINGS FOR ANOMALY DETECTION HERE
 CONFIG_USE=AnomalyConfig(
@@ -43,17 +60,17 @@ def main(CONFIG_USE=CONFIG_USE, AGG_FREQ=AGG_FREQ_USE):
     )
     datainput_group.add_argument(
         "--data-dir", 
-        default="/work/YOU-DARE/controversy-mapping/sentence_filtering/indexed_data",
+        default=str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "indexed_data"),
         help="Path to input directory with JSONL files."
     )
     parser.add_argument(
         "--output-dir-peaks",
-        default="/work/YOU-DARE/controversy-mapping/trend-analysis/output/peaks",
+        default=str(REPO_ROOT / "controversy-mapping" / "trend-analysis" / "output" / "peaks"),
         help="Directory for storing jsonlines with peaks"
     )
     parser.add_argument(
         "--output-dir-vis",
-        default="/work/YOU-DARE/controversy-mapping/trend-analysis/output/packages_for_researchers",
+        default=str(REPO_ROOT / "controversy-mapping" / "trend-analysis" / "output" / "packages_for_researchers"),
         help="Directory for visualization (data packages for researchers)"
     )
 

@@ -1,11 +1,29 @@
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 import json
 import pandas as pd
 import dateparser
 import re
-import os
 import numpy as np
 import traceback
 import pathlib
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 class Doccano_Functions:
     def __init__(self):
@@ -364,7 +382,7 @@ class Doccano_Functions:
             return r'\s' + re.escape(pattern) + r'(\s|\.|\,)'
 
     def save_data(self, df, custom_suffix=None):
-        output_dir = f'/work/YOU-DARE/doccano/data/{self.country}'
+        output_dir = fstr(REPO_ROOT / "doccano" / "data" / f"{self.country}")
 
         if custom_suffix:
             output_path = f'{output_dir}/data_{self.country}_{self.source}_{self.method}_{custom_suffix}_anno.jl'

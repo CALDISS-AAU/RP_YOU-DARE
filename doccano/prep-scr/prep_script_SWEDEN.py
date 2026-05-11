@@ -1,4 +1,23 @@
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 from .functions.functions import Doccano_Functions
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 ''' To run this scraper from bash do the following:
         python -m YOU-DARE.doccano.prep_script_SWEDEN
@@ -40,7 +59,7 @@ SE_from_date = '2021-06-01'
 SE_to_date = '2025-06-30'
 
 # Step 2: Find all datasets that should be prepared for doccano
-sweden_data_directory = '/work/YOU-DARE/scrapers/data/Sweden' # All datasets for the TEST-country (could also be e.g. '/work/YOU-DARE/scrapers/data/TEST_COUNTRY/Telegram' if one only want to prepare telegram datasets)
+sweden_data_directory = str(REPO_ROOT / "scrapers" / "data" / "Sweden") # All datasets for the TEST-country (could also be e.g. str(REPO_ROOT / "scrapers" / "data" / "TEST_COUNTRY" / "Telegram") if one only want to prepare telegram datasets)
 list_of_TEST_dataset_paths = doccano.get_all_dataset_paths(sweden_data_directory) # Finds all datasets within this folderstructure that ends with '_YT.jl', '_SPIDER.jl', '_MANUAL.jl' or '_TELEGRAM.jl'
 
 # Step 3: Prepare said datasets for doccano
@@ -64,20 +83,20 @@ keywords_2_raw = '''gender, sex*, masculine*, feminine*, hormone*, norm, sex*, L
 keywords_2 = [w.strip() for w in keywords_2_raw.split(",")]
 
 ### GOlden One YT ###
-golden_one_dir = '/work/YOU-DARE/scrapers/data/Sweden/the_golden_one_YT' # Only the source_1 folder
+golden_one_dir = str(REPO_ROOT / "scrapers" / "data" / "Sweden" / "the_golden_one_YT") # Only the source_1 folder
 list_of_golden_one_dataset_paths = doccano.get_all_dataset_paths(golden_one_dir ) 
 
 for dataset_path in list_of_golden_one_dataset_paths:
     doccano.prepare_data_for_doccano(dataset_path, keywords=keywords_2, from_date=SE_from_date, to_date=SE_to_date)
 
 ### GOLDEN ONE TELEGRAM ###
-golden_one_TELEGRAM_path = '/work/YOU-DARE/scrapers/data/Sweden/Telegram/thegoldenone_TELEGRAM' # Full path to a specific dataset
+golden_one_TELEGRAM_path = str(REPO_ROOT / "scrapers" / "data" / "Sweden" / "Telegram" / "thegoldenone_TELEGRAM") # Full path to a specific dataset
 list_of_golden_one_telegram_dataset_paths = doccano.get_all_dataset_paths(golden_one_TELEGRAM_path) 
 for dataset_path in list_of_golden_one_dataset_paths:
     doccano.prepare_data_for_doccano(dataset_path, keywords=keywords_2, from_date=SE_from_date, to_date=SE_to_date)
 
 ### GYM XIV OLD TELEGRAM ###
-gym_xiv_old_dir = '/work/YOU-DARE/scrapers/data/Sweden/Telegram/GymXIV_OLD'
+gym_xiv_old_dir = str(REPO_ROOT / "scrapers" / "data" / "Sweden" / "Telegram" / "GymXIV_OLD")
 gym_xiv_dataset_paths = doccano.get_all_dataset_paths(gym_xiv_old_dir) 
 
 for dataset_path in gym_xiv_dataset_paths:
@@ -85,7 +104,7 @@ for dataset_path in gym_xiv_dataset_paths:
 
 
 ### GYM XIV NEW TELEGRAM
-gym_xiv_new_dir = '/work/YOU-DARE/scrapers/data/Sweden/Telegram/GymXIV2_NEW'
+gym_xiv_new_dir = str(REPO_ROOT / "scrapers" / "data" / "Sweden" / "Telegram" / "GymXIV2_NEW")
 gym_xiv_new_dataset_paths = doccano.get_all_dataset_paths(gym_xiv_new_dir) 
 
 for dataset_path in list_of_golden_one_dataset_paths:

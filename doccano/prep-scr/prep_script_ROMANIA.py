@@ -1,4 +1,23 @@
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 from .functions.functions import Doccano_Functions
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 ''' To run this scraper from bash do the following:
         python -m YOU-DARE.doccano.prep_script_ROMANIA
@@ -39,7 +58,7 @@ from_date = None
 to_date = None
 
 # Step 2: Find all datasets that should be prepared for doccano
-romania_data_directory = '/work/YOU-DARE/scrapers/data/Romania' # All datasets for the TEST-country (could also be e.g. '/work/YOU-DARE/scrapers/data/TEST_COUNTRY/Telegram' if one only want to prepare telegram datasets)
+romania_data_directory = str(REPO_ROOT / "scrapers" / "data" / "Romania") # All datasets for the TEST-country (could also be e.g. str(REPO_ROOT / "scrapers" / "data" / "TEST_COUNTRY" / "Telegram") if one only want to prepare telegram datasets)
 list_of_Romania_dataset_paths = doccano.get_all_dataset_paths(romania_data_directory) # Finds all datasets within this folderstructure that ends with '_YT.jl', '_SPIDER.jl', '_MANUAL.jl' or '_TELEGRAM.jl'
 
 # Step 3: Prepare said datasets for doccano
@@ -55,7 +74,7 @@ for dataset_path in list_of_Romania_dataset_paths:
 ''' 
 
 ### Cultura Vietii SPIDER ###
-cultura_vietii_dir = '/work/YOU-DARE/scrapers/data/Romania/cultura_vietii_SPIDER/data_cultura_vietii_SPIDER.jl' # Only the source_1 folder
+cultura_vietii_dir = str(REPO_ROOT / "scrapers" / "data" / "Romania" / "cultura_vietii_SPIDER" / "data_cultura_vietii_SPIDER.jl") # Only the source_1 folder
 list_of_cultura_dataset_paths = doccano.get_all_dataset_paths(cultura_vietii_dir) 
 
 for dataset_path in list_of_cultura_dataset_paths:

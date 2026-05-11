@@ -1,12 +1,30 @@
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 
 import pandas as pd
 
 
-UMAP_DIR = Path("/work/YOU-DARE/controversy-mapping/semantic-mapping/output/embeddings/")
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
+
+UMAP_DIR = REPO_ROOT / "controversy-mapping" / "semantic-mapping" / "output" / "embeddings"
 DATE_FROM = pd.Timestamp("2015-01-01")
 DATE_TO = pd.Timestamp("2025-07-31")
-PATH_OUT = Path("/work/YOU-DARE/controversy-mapping/final_plots/input_data/umap_chunks_keep/umap_chunks_keep.csv")
+PATH_OUT = REPO_ROOT / "controversy-mapping" / "final_plots" / "input_data" / "umap_chunks_keep" / "umap_chunks_keep.csv"
 
 def build_umap_filter_df():
     combined_df = pd.DataFrame(columns=["country", "theme", "chunk_id"])

@@ -1,9 +1,27 @@
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 import pandas as pd
 import json
 import pathlib
 from datetime import datetime
-import os
 import re
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 def get_all_dataset_paths(data_directory):
     ''' Collects paths of all datasets ending with '*_YT' or '*_TELEGRAM' and returns these as a list.
@@ -52,10 +70,10 @@ def safe_name(s):
     s = re.sub(r'[<>:"|?*\n\r\t]', "_", s)      # other nasty chars
     return s or "no_title"
 
-input_folder = '/work/YOU-DARE/scrapers/data/Spain' # Parent folder with all datasets for Spain
+input_folder = str(REPO_ROOT / "scrapers" / "data" / "Spain") # Parent folder with all datasets for Spain
 input_paths = get_all_dataset_paths(input_folder) # Generates list of all datasets within the spain-data folder
-output_folder_clean = '/work/YOU-DARE/various_tasks/Spain_datadump/data_clean' # The final output-folder for the clean data
-output_folder_meta = '/work/YOU-DARE/various_tasks/Spain_datadump/data_meta' # The final output-folder for the meta data / full jsonline
+output_folder_clean = str(REPO_ROOT / "various_tasks" / "Spain_datadump" / "data_clean") # The final output-folder for the clean data
+output_folder_meta = str(REPO_ROOT / "various_tasks" / "Spain_datadump" / "data_meta") # The final output-folder for the meta data / full jsonline
 
 for file_path in input_paths:
     # Reads the dataset

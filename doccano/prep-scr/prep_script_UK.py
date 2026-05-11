@@ -1,4 +1,23 @@
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 from .functions.functions import Doccano_Functions
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 ''' To run this scraper from bash do the following:
         python -m YOU-DARE.doccano.prep_script_UK
@@ -39,17 +58,17 @@ keywords = [w.strip() for w in keywords_raw.split(",")]
 from_date = '2010-01-01'
 
 # Step 2: Find all datasets that should be prepared for doccano
-data_dir = '/work/YOU-DARE/scrapers/data/United_Kingdom' # All datasets for the TEST-country (could also be e.g. '/work/YOU-DARE/scrapers/data/TEST_COUNTRY/Telegram' if one only want to prepare telegram datasets)
+data_dir = str(REPO_ROOT / "scrapers" / "data" / "United_Kingdom") # All datasets for the TEST-country (could also be e.g. str(REPO_ROOT / "scrapers" / "data" / "TEST_COUNTRY" / "Telegram") if one only want to prepare telegram datasets)
 list_of_UK_dataset_paths = doccano.get_all_dataset_paths(data_dir) # Finds all datasets within this folderstructure that ends with '_YT.jl', '_SPIDER.jl', '_MANUAL.jl' or '_TELEGRAM.jl'
 
 # Exclude
 drop = [
-        '/work/YOU-DARE/scrapers/data/United_Kingdom/modernity_individual_links_SPIDER/data_modernity_individual_links_including_duplicates_SPIDER.jl',
-        '/work/YOU-DARE/scrapers/data/United_Kingdom/lotus_eaters/lotus_eaters_news_SPIDER/data_lotus_eaters_news_SPIDER.jl',
-        '/work/YOU-DARE/scrapers/data/United_Kingdom/lotus_eaters/lotus_eaters_analysis_SPIDER/data_lotus_eaters_analysis_SPIDER.jl',
-        '/work/YOU-DARE/scrapers/data/United_Kingdom/lotus_eaters/lotus_eaters_entertainment_SPIDER/data_lotus_eaters_entertainment_SPIDER.jl',
-        '/work/YOU-DARE/scrapers/data/United_Kingdom/mansworld_magazine/manworlds_magazine_essay_SPIDER/data_manworlds_magazine_essay_SPIDER.jl',
-        '/work/YOU-DARE/scrapers/data/United_Kingdom/mansworld_magazine/manworlds_magazine_interview_SPIDER/data_manworlds_magazine_interview_SPIDER.jl'
+        str(REPO_ROOT / "scrapers" / "data" / "United_Kingdom" / "modernity_individual_links_SPIDER" / "data_modernity_individual_links_including_duplicates_SPIDER.jl"),
+        str(REPO_ROOT / "scrapers" / "data" / "United_Kingdom" / "lotus_eaters" / "lotus_eaters_news_SPIDER" / "data_lotus_eaters_news_SPIDER.jl"),
+        str(REPO_ROOT / "scrapers" / "data" / "United_Kingdom" / "lotus_eaters" / "lotus_eaters_analysis_SPIDER" / "data_lotus_eaters_analysis_SPIDER.jl"),
+        str(REPO_ROOT / "scrapers" / "data" / "United_Kingdom" / "lotus_eaters" / "lotus_eaters_entertainment_SPIDER" / "data_lotus_eaters_entertainment_SPIDER.jl"),
+        str(REPO_ROOT / "scrapers" / "data" / "United_Kingdom" / "mansworld_magazine" / "manworlds_magazine_essay_SPIDER" / "data_manworlds_magazine_essay_SPIDER.jl"),
+        str(REPO_ROOT / "scrapers" / "data" / "United_Kingdom" / "mansworld_magazine" / "manworlds_magazine_interview_SPIDER" / "data_manworlds_magazine_interview_SPIDER.jl")
 ]
 
 list_of_UK_dataset_paths = [path for path in list_of_UK_dataset_paths if path not in drop]

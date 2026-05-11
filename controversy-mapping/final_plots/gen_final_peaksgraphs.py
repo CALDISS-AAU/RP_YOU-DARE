@@ -1,8 +1,10 @@
 """Run anomaly detection on trend data."""
 
 from __future__ import annotations
-
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 import argparse
 import sys
 import warnings
@@ -17,14 +19,29 @@ import plotly.express as px
 from modules.plotting_peaks import prepare_results_flagged, gen_streamgraph_peaks
 from modules.peaks_table import create_peaks_table
 
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
+
 # SET AGGREGATION LEVEL HERE
 # Options: "D" - day, "W" - week, "2W" - biweekly, "ME" - month, "2ME" - bimonthly, "QE" - quarter, "YE" - year
 AGG_FREQ_USE = "ME"
 
-INDEXED_DATA_DIR = Path("/work/YOU-DARE/controversy-mapping/sentence_filtering/indexed_data/")
-FLAGGED_DIR = Path("/work/YOU-DARE/controversy-mapping/final_plots/input_data/D2.1 Timelines")
-MAPS_OUT_DIR = Path("/work/YOU-DARE/controversy-mapping/final_plots/plots/peaks_deliverable")
-#MAPS_OUT_DIR = Path("/work/YOU-DARE/controversy-mapping/final_plots/plots/peaks_test")
+INDEXED_DATA_DIR = REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "indexed_data"
+FLAGGED_DIR = REPO_ROOT / "controversy-mapping" / "final_plots" / "input_data" / "D2.1 Timelines"
+MAPS_OUT_DIR = REPO_ROOT / "controversy-mapping" / "final_plots" / "plots" / "peaks_deliverable"
+#MAPS_OUT_DIR = REPO_ROOT / "controversy-mapping" / "final_plots" / "plots" / "peaks_test"
 
 ## Countries and themes
 COUNTRIES = [

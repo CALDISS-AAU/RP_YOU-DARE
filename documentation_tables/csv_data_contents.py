@@ -1,9 +1,27 @@
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 import pandas as pd
 import numpy as np
 import dateparser
-import os
 import json
 from docx import Document
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 COUNTRIES = [
     "DK",
@@ -25,8 +43,8 @@ DATE_ORDER_BY_PAIR = {
     ("GB NEWS", "Website"): "DMY",
 }
 
-INFLUENCER_MAPPING_DIR = "/work/YOU-DARE/raw-data/mappings/actor_identifier_key/actor_identifier_key.csv"
-OUTPUT_DIR = "/work/YOU-DARE/documentation_tables/csv_tables_anonymised"
+INFLUENCER_MAPPING_DIR = str(REPO_ROOT / "raw-data" / "mappings" / "actor_identifier_key" / "actor_identifier_key.csv")
+OUTPUT_DIR = str(REPO_ROOT / "documentation_tables" / "csv_tables_anonymised")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # LOG_FILE = os.path.join(OUTPUT_DIR, "log.txt")
@@ -361,7 +379,7 @@ log_data = {}
 actor_mapping_log_data = {}
 
 for country in COUNTRIES:
-    input_file = f"/work/YOU-DARE/raw-data/final_raw/{country}_YOUDARE-WEBDATA_combined.jsonl"
+    input_file = fstr(REPO_ROOT / "raw-data" / "final_raw" / f"{country}_YOUDARE-WEBDATA_combined.jsonl")
     output_csv = os.path.join(OUTPUT_DIR, f"{country}_data_contents.csv")
     output_docx = os.path.join(OUTPUT_DIR, f"{country}_data_contents.docx")
 

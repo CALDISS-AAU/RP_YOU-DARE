@@ -1,22 +1,40 @@
-import json
+from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+import json
 from os.path import join
 import pandas as pd
 from .functions.functions import Doccano_Functions
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 ''' To run this script from bash do the following:
         python -m YOU-DARE.doccano.prep_script_FRANCE
 '''
 
 ## Read and prep pilotdata
-in_p = '/work/YOU-DARE/doccano/pilotdata/data/FR_pilot_annotated.jsonl'
+in_p = str(REPO_ROOT / "doccano" / "pilotdata" / "data" / "FR_pilot_annotated.jsonl")
 
 pilot_df = pd.read_json(in_p, orient = 'records', lines = True)
 pilot_df_filter = pilot_df.loc[pilot_df['entities'].apply(lambda x: len(x) > 0)].reset_index()
 pilot_df_select = pilot_df_filter[['link', 'text', 'entities', 'relations', 'Comments']].rename(columns = {'text': 'text_pilot'})
 
 ## Prepare labels mapping
-labels_p = '/work/YOU-DARE/doccano/pilotdata/labels/FR-labels-mapping_rev.xlsx'
+labels_p = str(REPO_ROOT / "doccano" / "pilotdata" / "labels" / "FR-labels-mapping_rev.xlsx")
 
 labels_df = pd.read_excel(labels_p)
 labels_df['new label'] = labels_df['new label'].fillna(labels_df['old label']) # use old label if no new label specified
@@ -110,7 +128,7 @@ from_date = '2023-01-01'
 to_date = '2025-10-01'
 
 # Step 2: Find all datasets that should be prepared for doccano
-FR_data_directory = '/work/YOU-DARE/scrapers/data/France' # All datasets for the country
+FR_data_directory = str(REPO_ROOT / "scrapers" / "data" / "France") # All datasets for the country
 list_of_FR_dataset_paths = doccano.get_all_dataset_paths(FR_data_directory) # Finds all datasets within this folderstructure that ends with '_YT.jl', '_SPIDER.jl', '_MANUAL.jl' or '_TELEGRAM.jl'
 
 # Step 3: Prepare said datasets for doccano

@@ -1,5 +1,23 @@
-import pandas as pd
+from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+import pandas as pd
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 all_countries = [
     'DK',
@@ -18,9 +36,9 @@ all_themes = [
     'woke'
 ]
 
-input_folder_path = '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data'
+input_folder_path = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data")
 input_file_ending = '_matched.jl'
-output_folder_path = '/work/YOU-DARE/controversy-mapping/sentence_filtering/keyword_related_data/matched_words_xlsx'
+output_folder_path = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "keyword_related_data" / "matched_words_xlsx")
 
 for country in all_countries:
     output_file_path = f'{output_folder_path}/{country}_matched_words.xlsx'

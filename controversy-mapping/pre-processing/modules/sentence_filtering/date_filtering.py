@@ -1,8 +1,26 @@
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 import pandas as pd
 import json
-from pathlib import Path
 import html
 import random
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 all_countries = [
     'DK',
@@ -31,10 +49,10 @@ cols_to_add_from_reduced = [
 number_of_texts_excel = 100 # Max number of texts pr peak pr topic pr country
 number_of_characters_excel = 300 # Max number of characters from each text
 
-input_data_folder = '/work/YOU-DARE/controversy-mapping/sentence_filtering/indexed_data'
-input_peaks_folder = '/work/YOU-DARE/controversy-mapping/trend-analysis/output/peaks' # '/work/YOU-DARE/controversy-mapping/trend-analysis/output/peaks'
-reduced_data_folder = '/work/YOU-DARE/controversy-mapping/sentence_filtering/reduced_data/'
-output_folder = '/work/YOU-DARE/controversy-mapping/trend-analysis/output/packages_for_researchers' # '/work/YOU-DARE/controversy-mapping/trend-analysis/output/packages_for_researchers'
+input_data_folder = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "indexed_data")
+input_peaks_folder = str(REPO_ROOT / "controversy-mapping" / "trend-analysis" / "output" / "peaks") # str(REPO_ROOT / "controversy-mapping" / "trend-analysis" / "output" / "peaks")
+reduced_data_folder = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "reduced_data")
+output_folder = str(REPO_ROOT / "controversy-mapping" / "trend-analysis" / "output" / "packages_for_researchers") # str(REPO_ROOT / "controversy-mapping" / "trend-analysis" / "output" / "packages_for_researchers")
 
 # seed
 random.seed(1770661406) # Unix Epoch Feb 09 19:23:26 2026 CET

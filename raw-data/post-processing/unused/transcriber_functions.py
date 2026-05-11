@@ -1,10 +1,27 @@
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 import whisper
 from pydub import AudioSegment
 import csv
 import warnings
 import json
-import os
-from pathlib import Path
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 # Suppress specific warnings
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -41,7 +58,7 @@ def save_transcription_to_json(result, output_path):
 
 # Basic usage
 if __name__ == "__main__":
-    folder_path = "/work/YOU-DARE/scrapers/data/Spain/red_pill_podcast_YT/m4a_files/"
-    output_dir = "/work/YOU-DARE/scrapers/data/Spain/red_pill_podcast_YT/transcribed"
+    folder_path = str(REPO_ROOT / "scrapers" / "data" / "Spain" / "red_pill_podcast_YT" / "m4a_files")
+    output_dir = str(REPO_ROOT / "scrapers" / "data" / "Spain" / "red_pill_podcast_YT" / "transcribed")
 
     transcribe_all_files(folder_path, output_dir)

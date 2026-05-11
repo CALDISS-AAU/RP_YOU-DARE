@@ -1,11 +1,28 @@
 #!/usr/bin/env python3
+from pathlib import Path
+import os
+from dotenv import load_dotenv
 
 import json
-from pathlib import Path
+
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
 
 
 # === CONFIG (hardcoded paths) ===
-BASE_DIR = Path("/work/YOU-DARE/raw-data/post-processing")
+BASE_DIR = REPO_ROOT / "raw-data" / "post-processing"
 OUTPUT_FILE = BASE_DIR / "actor_platform_pairs_log.txt"
 
 COUNTRY_CODES = ["DK", "ES", "FR", "HU", "IT", "RO", "SE", "UK"]

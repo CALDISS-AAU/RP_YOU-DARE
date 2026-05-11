@@ -3,8 +3,10 @@ Pipeline for semantic mapping
 """
 
 from __future__ import annotations
-
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 import argparse
 import sys
 import warnings
@@ -17,8 +19,23 @@ import numpy as np
 from modules.data_ingestion import sentences_to_chunks,sentences_to_chunk_mp, ChunkConfig, read_embeddings_as_df
 from modules.semantic_mapping_func import EmbeddingConfig, DimensionConfig
 
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
+
 ## Embedding dir
-EMBEDDINGS_IN_DIR = Path("/work/YOU-DARE/controversy-mapping/semantic-mapping/output/embeddings/")
+EMBEDDINGS_IN_DIR = REPO_ROOT / "controversy-mapping" / "semantic-mapping" / "output" / "embeddings"
 
 ## Countries and themes
 COUNTRIES = {
@@ -90,7 +107,7 @@ def main():
         actor_embeddings['umap_2'] = actor_projections[:, 1]
 
         # Plotting
-        DIM_CONFIG.plotter(theme_df , actor_df=actor_embeddings,theme=theme, output_path=f'/work/YOU-DARE/controversy-mapping/semantic-mapping/plots/kgk/{theme}_umap.html')
+        DIM_CONFIG.plotter(theme_df , actor_df=actor_embeddings,theme=theme, output_path=fstr(REPO_ROOT / "controversy-mapping" / "semantic-mapping" / "plots" / "kgk" / f"{theme}_umap.html"))
 
 if __name__ == "__main__":
     main()

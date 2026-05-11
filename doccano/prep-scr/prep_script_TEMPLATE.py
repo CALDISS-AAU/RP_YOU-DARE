@@ -1,4 +1,23 @@
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 from .functions.functions import Doccano_Functions
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 ''' To run this scraper from bash do the following:
         python -m YOU-DARE.doccano.prep_script_TEMPLATE
@@ -55,7 +74,7 @@ TEST_from_date = '2022-03-17'
 TEST_to_date = '2023'
 
 # Step 2: Find all datasets that should be prepared for doccano
-TEST_data_directory = '/work/YOU-DARE/scrapers/data/TEST_COUNTRY' # All datasets for the TEST-country (could also be e.g. '/work/YOU-DARE/scrapers/data/TEST_COUNTRY/Telegram' if one only want to prepare telegram datasets)
+TEST_data_directory = str(REPO_ROOT / "scrapers" / "data" / "TEST_COUNTRY") # All datasets for the TEST-country (could also be e.g. str(REPO_ROOT / "scrapers" / "data" / "TEST_COUNTRY" / "Telegram") if one only want to prepare telegram datasets)
 list_of_TEST_dataset_paths = doccano.get_all_dataset_paths(TEST_data_directory) # Finds all datasets within this folderstructure that ends with '_YT.jl', '_SPIDER.jl', '_MANUAL.jl' or '_TELEGRAM.jl'
 
 # Step 3: Prepare said datasets for doccano
@@ -80,7 +99,7 @@ SOURCE_1_keywords = [
 '''
 SOURCE_1_from_date = '2022'
 
-SOURCE_1_data_directory = '/work/YOU-DARE/scrapers/data/TEST_COUNTRY/blocco_studentesco_SPIDER' # Only the source_1 folder
+SOURCE_1_data_directory = str(REPO_ROOT / "scrapers" / "data" / "TEST_COUNTRY" / "blocco_studentesco_SPIDER") # Only the source_1 folder
 list_of_SOURCE_1_dataset_paths = doccano.get_all_dataset_paths(SOURCE_1_data_directory) 
 
 for dataset_path in list_of_SOURCE_1_dataset_paths:
@@ -89,7 +108,7 @@ for dataset_path in list_of_SOURCE_1_dataset_paths:
 SOURCE_2_keywords = TEST_keywords + SOURCE_1_keywords
 SOURCE_2_to_date = '2025-08'
 
-SOURCE_2_file_path = '/work/YOU-DARE/scrapers/data/TEST_COUNTRY/motstandsrorelsen_SPIDER/data_motstandsrorelsen_SPIDER.jl' # Full path to a specific dataset
+SOURCE_2_file_path = str(REPO_ROOT / "scrapers" / "data" / "TEST_COUNTRY" / "motstandsrorelsen_SPIDER" / "data_motstandsrorelsen_SPIDER.jl") # Full path to a specific dataset
 
 doccano.prepare_data_for_doccano(SOURCE_2_file_path, keywords=SOURCE_2_keywords, from_date=SOURCE_1_from_date, to_date=SOURCE_2_to_date)
 
@@ -101,7 +120,7 @@ SOURCE_3_keywords = [
 ]
 SOURCE_3_keyword_pairs = [['bărbat', 'femeie'], ['femeie', 'România']]
 
-SOURCE_3_file_path = '/work/YOU-DARE/scrapers/data/TEST_COUNTRY/Telegram/comunitateaidentitara/comunitateaidentitara_post_TELEGRAM.jl'
+SOURCE_3_file_path = str(REPO_ROOT / "scrapers" / "data" / "TEST_COUNTRY" / "Telegram" / "comunitateaidentitara" / "comunitateaidentitara_post_TELEGRAM.jl")
 
 doccano.prepare_data_for_doccano(SOURCE_3_file_path, keywords = SOURCE_3_keywords, keyword_pairs = SOURCE_3_keyword_pairs)
 

@@ -5,15 +5,33 @@
 - splits text processing within each peak across cpus using multiprocessing 
     - # NOTE: could probably be optimized further by extracting all texts across peaks first and then process using multiprocessing
 """
+from pathlib import Path
+import os
+from dotenv import load_dotenv
 
 import json
 import multiprocessing as mp
 from collections import Counter
-from pathlib import Path
 import re
 
 import pandas as pd
 import spacy
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
+
 # pip install huspacy
 import huspacy
 
@@ -81,10 +99,10 @@ BATCH_SIZE = 64 # number of texts in batch to process at a time
 CPU_COUNT = 32 # NOTE: On UCloud, cores on machine type does not necessarily correspond to available cores. Also, not possible to extract number of cores via mp.cpu_count() (will just shows cores on the machine where the VM is running)
 
 # data dirs
-indexed_data_folder = "/work/YOU-DARE/controversy-mapping/sentence_filtering/indexed_data"
-reduced_data_folder = "/work/YOU-DARE/controversy-mapping/sentence_filtering/reduced_data"
-input_peaks_folder = "/work/YOU-DARE/controversy-mapping/trend-analysis/output/peaks"
-output_data_folder = "/work/YOU-DARE/controversy-mapping/trend-analysis/output/peaks" 
+indexed_data_folder = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "indexed_data")
+reduced_data_folder = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "reduced_data")
+input_peaks_folder = str(REPO_ROOT / "controversy-mapping" / "trend-analysis" / "output" / "peaks")
+output_data_folder = str(REPO_ROOT / "controversy-mapping" / "trend-analysis" / "output" / "peaks") 
 
 
 # Translation stuff
@@ -165,7 +183,6 @@ def ensure_spacy_model(model_name):
         spacy.load(model_name)
     except OSError:
         if model_name.startswith("hu"):
-            import huspacy
             huspacy.download(model_name)
         else:
             spacy.cli.download(model_name)

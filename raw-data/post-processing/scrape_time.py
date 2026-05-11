@@ -1,9 +1,26 @@
-import pandas as pd
-import os
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+import pandas as pd
 from datetime import datetime
 
-data_dir = Path("/work/YOU-DARE/raw-data/final_raw")
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
+
+data_dir = REPO_ROOT / "raw-data" / "final_raw"
 
 data_files = os.listdir(data_dir)
 

@@ -3,3 +3,4 @@ numpy
 pysbd
 tqdm
 dateparser
+python-dotenv

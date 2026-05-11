@@ -1,10 +1,27 @@
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 import pandas as pd
 import json
 import re
-from pathlib import Path
 import dateparser
-import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 all_countries = [
     'DK',
@@ -17,13 +34,13 @@ all_countries = [
     'UK'
 ]
 
-datasets_folder_path = '/work/YOU-DARE/controversy-mapping/sentence_filtering/reduced_data/'
+datasets_folder_path = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "reduced_data")
 datasets_file_ending = '_reduced.jl'
-keyword_lists_folder_path = '/work/YOU-DARE/controversy-mapping/sentence_filtering/keyword_related_data/keyword_lists/'
+keyword_lists_folder_path = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "keyword_related_data" / "keyword_lists")
 keyword_lists_file_ending = '_keywords_lists.txt'
-false_positives_lists_folder_path = '/work/YOU-DARE/controversy-mapping/sentence_filtering/keyword_related_data/false_positives_lists/'
+false_positives_lists_folder_path = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "keyword_related_data" / "false_positives_lists")
 false_positives_lists_file_ending = '_false_positives_lists.txt'
-matched_datasets_folder_path = '/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/'
+matched_datasets_folder_path = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data")
 matched_datasets_file_ending = '_matched.jl'
 
 english_speaking_actors = {

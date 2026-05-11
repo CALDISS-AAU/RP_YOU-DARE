@@ -3,8 +3,10 @@ Pipeline for semantic mapping
 """
 
 from __future__ import annotations
-
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 import argparse
 import sys
 import warnings
@@ -16,14 +18,29 @@ import numpy as np
 from modules.data_ingestion import read_embeddings_as_df
 from modules.clustering import DimensionConfig
 
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
+
 ## Embedding dir
-EMBEDDINGS_IN_DIR = Path("/work/YOU-DARE/controversy-mapping/semantic-mapping/output/embeddings")
+EMBEDDINGS_IN_DIR = REPO_ROOT / "controversy-mapping" / "semantic-mapping" / "output" / "embeddings"
 
 ## Plot output dir
-PLOT_OUT_DIR = Path("/work/YOU-DARE/controversy-mapping/semantic-mapping/plots/semantic-maps_analyze")
+PLOT_OUT_DIR = REPO_ROOT / "controversy-mapping" / "semantic-mapping" / "plots" / "semantic-maps_analyze"
 
 ## UMAP output dir
-UMAP_OUT_DIR = Path("/work/YOU-DARE/controversy-mapping/semantic-mapping/output/umap_positions")
+UMAP_OUT_DIR = REPO_ROOT / "controversy-mapping" / "semantic-mapping" / "output" / "umap_positions"
 
 ## Countries and themes
 COUNTRIES = {

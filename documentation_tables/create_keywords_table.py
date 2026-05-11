@@ -1,13 +1,31 @@
-import json
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+import json
 
 from docx import Document
 
 
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
+
 HEADERS = ["Topic", "Dictionary Terms", "False Positives"]
 PREFIXES = ["DK", "HU", "SE", "FR", "IT", "RO", "UK", "ES"]
-BASE_DIR = Path("/work/YOU-DARE/controversy-mapping/sentence_filtering/keyword_related_data")
-OUT_DIR = Path("/work/YOU-DARE/documentation_tables/keywords_tables")
+BASE_DIR = REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "keyword_related_data"
+OUT_DIR = REPO_ROOT / "documentation_tables" / "keywords_tables"
 
 TOPICS = {
     "lgb": "LGBTQI+",

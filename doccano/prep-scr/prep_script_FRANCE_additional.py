@@ -1,9 +1,27 @@
-import json
+from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+import json
 from os.path import join
 import pandas as pd
 import random
 from .functions.functions import Doccano_Functions
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 ''' To run this script from bash do the following:
         python -m YOU-DARE.doccano.prep_script_FRANCE_additional
@@ -21,8 +39,8 @@ doccano = Doccano_Functions()
 
 # Step 2: Find all datasets that should be prepared for doccano
 list_of_FR_dataset_paths = [
-        "/work/YOU-DARE/scrapers/data/France/generation_zemmour_SPIDER/data_generation_zemmour_SPIDER.jl",
-        "/work/YOU-DARE/scrapers/data/France/les_identitaires_SPIDER/data_les_identitaires_SPIDER.jl"
+        str(REPO_ROOT / "scrapers" / "data" / "France" / "generation_zemmour_SPIDER" / "data_generation_zemmour_SPIDER.jl"),
+        str(REPO_ROOT / "scrapers" / "data" / "France" / "les_identitaires_SPIDER" / "data_les_identitaires_SPIDER.jl")
 ]
 
 # Step 3: Prepare said datasets for doccano
@@ -95,7 +113,7 @@ from_date = '2023-01-01'
 to_date = '2025-10-01'
 
 # dataset path
-thais_dataset_path = '/work/YOU-DARE/scrapers/data/France/ThaisdEscufon_YT/ThaisdEscufon_YT.jl'
+thais_dataset_path = str(REPO_ROOT / "scrapers" / "data" / "France" / "ThaisdEscufon_YT" / "ThaisdEscufon_YT.jl")
 
 # 
 doccano.prepare_data_for_doccano(thais_dataset_path, keywords=FR_keywords, from_date=from_date, to_date=to_date)

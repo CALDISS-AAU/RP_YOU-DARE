@@ -1,22 +1,41 @@
-#!/work/YOU-DARE/controversy-mapping/.venv/bin/python
+#!/usr/bin/env python3
+from pathlib import Path
 import os
+from dotenv import load_dotenv
+
 import pandas as pd
 import numpy as np
 import spacy
 import stanza
 from collections import Counter
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
+
 # from spacy.lang.fr.stop_words import STOP_WORDS
 # Stanza on my fat face
 stanza.download("sv")
 
 
 # data
-SE_data = pd.read_csv('/work/YOU-DARE/controversy-mapping/keyword-analysis/data/work/SE_annotated_labels_flat.csv')
-ES_data = pd.read_csv('/work/YOU-DARE/controversy-mapping/keyword-analysis/data/work/ES_annotated_labels_flat.csv')
-FR_data = pd.read_csv('/work/YOU-DARE/controversy-mapping/keyword-analysis/data/work/FR_annotated_labels_flat.csv')
-HU_data = pd.read_csv('/work/YOU-DARE/controversy-mapping/keyword-analysis/data/work/HU_annotated_labels_flat.csv')
-RO_data = pd.read_csv('/work/YOU-DARE/controversy-mapping/keyword-analysis/data/work/RO_annotated_labels_flat.csv')
-UK_data = pd.read_csv('/work/YOU-DARE/controversy-mapping/keyword-analysis/data/work/UK_annotated_labels_flat.csv')
+SE_data = pd.read_csv(str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "data" / "work" / "SE_annotated_labels_flat.csv"))
+ES_data = pd.read_csv(str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "data" / "work" / "ES_annotated_labels_flat.csv"))
+FR_data = pd.read_csv(str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "data" / "work" / "FR_annotated_labels_flat.csv"))
+HU_data = pd.read_csv(str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "data" / "work" / "HU_annotated_labels_flat.csv"))
+RO_data = pd.read_csv(str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "data" / "work" / "RO_annotated_labels_flat.csv"))
+UK_data = pd.read_csv(str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "data" / "work" / "UK_annotated_labels_flat.csv"))
 
 '''
 X: LGBTQ/Transgender/Homosexuality
@@ -191,113 +210,113 @@ def save_top_pos(data_list, outfile):
 # UK
 # Gender Nouns
 top_gender_UK = get_label_nouns(UK_Gender)
-save_top_nouns(top_gender_UK, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/top_gender_UK.csv')
+save_top_nouns(top_gender_UK, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "top_gender_UK.csv"))
 # Gender POS
 Gender_POS_UK = extract_pos(UK_Gender)
-save_top_pos(Gender_POS_UK, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/Gender_POS_UK.csv')
+save_top_pos(Gender_POS_UK, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "Gender_POS_UK.csv"))
 # Migration Nouns
 top_migration = get_label_nouns(UK_Migration)
-save_top_nouns(top_migration, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/top_migration_UK.csv')
+save_top_nouns(top_migration, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "top_migration_UK.csv"))
 # Migration POS
 Migration_POS_UK = extract_pos(UK_Migration)
-save_top_pos(Migration_POS_UK, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/Migration_POS_UK.csv')
+save_top_pos(Migration_POS_UK, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "Migration_POS_UK.csv"))
 top_lgbtq = get_label_nouns(UK_LGBTQ)
-save_top_nouns(top_lgbtq,'/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/top_lgbtq_UK.csv')
+save_top_nouns(top_lgbtq,str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "top_lgbtq_UK.csv"))
 # LGTBQ POS
 LGTBQ_POS_UK = extract_pos(UK_LGBTQ)
-save_top_pos(LGTBQ_POS_UK, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/LGBTQ_POS_UK.csv')
+save_top_pos(LGTBQ_POS_UK, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "LGBTQ_POS_UK.csv"))
 
 # FR
 # Gender POS
 Gender_POS_FR = extract_pos(FR_Gender)
-save_top_pos(Gender_POS_FR, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/Gender_POS_FR.csv')
+save_top_pos(Gender_POS_FR, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "Gender_POS_FR.csv"))
 # Migration POS
 Migration_POS_FR = extract_pos(FR_Migration)
-save_top_pos(Migration_POS_FR, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/Migration_POS_FR.csv')
+save_top_pos(Migration_POS_FR, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "Migration_POS_FR.csv"))
 # LGBTQ POS
 LGTBQ_POS_FR = extract_pos(FR_LGBTQ)
-save_top_pos(LGTBQ_POS_FR, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/LGBTQ_POS_FR.csv')
+save_top_pos(LGTBQ_POS_FR, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "LGBTQ_POS_FR.csv"))
 
 # NOUNS FR
 top_gender_FR = get_label_nouns(FR_Gender)
-save_top_nouns(top_gender_FR, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/top_gender_FR.csv')
+save_top_nouns(top_gender_FR, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "top_gender_FR.csv"))
 top_migration_FR = get_label_nouns(FR_Migration)
-save_top_nouns(top_migration_FR, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/top_migration_FR.csv')
+save_top_nouns(top_migration_FR, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "top_migration_FR.csv"))
 top_lgbtq_FR = get_label_nouns(FR_LGBTQ)
-save_top_nouns(top_lgbtq_FR, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/top_LGBTQ_FR.csv')
+save_top_nouns(top_lgbtq_FR, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "top_LGBTQ_FR.csv"))
 
 # SWE
 # Gender POS
 Gender_POS_SE = extract_pos(SE_Gender)
-save_top_pos(Gender_POS_SE, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/Gender_POS_SE.csv')
+save_top_pos(Gender_POS_SE, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "Gender_POS_SE.csv"))
 # Migration POS
 Migration_POS_SE = extract_pos(SE_Migration)
-save_top_pos(Migration_POS_SE, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/Migration_POS_SE.csv')
+save_top_pos(Migration_POS_SE, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "Migration_POS_SE.csv"))
 # LGBTQ POS
 LGTBQ_POS_SE = extract_pos(SE_LGBTQ)
-save_top_pos(LGTBQ_POS_SE, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/LGBTQ_POS_SE.csv')
+save_top_pos(LGTBQ_POS_SE, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "LGBTQ_POS_SE.csv"))
 
 # SE NOUNS
 top_gender_SE = get_label_nouns(SE_Gender)
-save_top_nouns(top_gender_SE, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/top_gender_SWE.csv')
+save_top_nouns(top_gender_SE, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "top_gender_SWE.csv"))
 top_migration_SE = get_label_nouns(SE_Migration)
-save_top_nouns(top_migration_SE, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/top_migration_SWE.csv')
+save_top_nouns(top_migration_SE, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "top_migration_SWE.csv"))
 top_lgbtq_SE = get_label_nouns(SE_LGBTQ)
-save_top_nouns(top_lgbtq_SE, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/top_LGBTQ_SWE.csv')
+save_top_nouns(top_lgbtq_SE, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "top_LGBTQ_SWE.csv"))
 
 # ES
 top_gender_ES = get_label_nouns(ES_Gender)
-save_top_nouns(top_gender_ES, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/top_gender_ES.csv')
+save_top_nouns(top_gender_ES, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "top_gender_ES.csv"))
 top_migration_ES = get_label_nouns(ES_Migration)
-save_top_nouns(top_migration_ES, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/top_migration_ES.csv')
+save_top_nouns(top_migration_ES, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "top_migration_ES.csv"))
 top_lgbtq_ES = get_label_nouns(ES_LGBTQ)
-save_top_nouns(top_lgbtq_ES, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/top_LGBTQ_ES.csv')
+save_top_nouns(top_lgbtq_ES, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "top_LGBTQ_ES.csv"))
 
 # Gender POS
 Gender_POS_ES = extract_pos(ES_Gender)
-save_top_pos(Gender_POS_ES, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/Gender_POS_ES.csv')
+save_top_pos(Gender_POS_ES, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "Gender_POS_ES.csv"))
 # Migration POS
 Migration_POS_ES = extract_pos(ES_Migration)
-save_top_pos(Migration_POS_ES, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/Migration_POS_ES.csv')
+save_top_pos(Migration_POS_ES, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "Migration_POS_ES.csv"))
 # LGBTQ POS
 LGTBQ_POS_ES = extract_pos(ES_LGBTQ)
-save_top_pos(LGTBQ_POS_ES, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/LGBTQ_POS_ES.csv')
+save_top_pos(LGTBQ_POS_ES, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "LGBTQ_POS_ES.csv"))
 
 # HU
 top_gender_HU = get_label_nouns_stanza(HU_Gender)
-save_top_nouns(top_gender_HU, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/top_gender_HU.csv')
+save_top_nouns(top_gender_HU, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "top_gender_HU.csv"))
 top_migration_HU = get_label_nouns_stanza(HU_Migration)
-save_top_nouns(top_migration_HU, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/top_migration_HU.csv')
+save_top_nouns(top_migration_HU, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "top_migration_HU.csv"))
 top_lgbtq_HU = get_label_nouns_stanza(HU_LGBTQ)
-save_top_nouns(top_lgbtq_HU, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/top_LGBTQ_HU.csv')
+save_top_nouns(top_lgbtq_HU, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "top_LGBTQ_HU.csv"))
 
 # Gender POS
 Gender_POS_HU = extract_pos_stanza(HU_Gender)
-save_top_pos(Gender_POS_HU, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/Gender_POS_HU.csv')
+save_top_pos(Gender_POS_HU, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "Gender_POS_HU.csv"))
 # Migration POS
 Migration_POS_HU = extract_pos_stanza(HU_Migration)
-save_top_pos(Migration_POS_HU, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/Migration_POS_HU.csv')
+save_top_pos(Migration_POS_HU, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "Migration_POS_HU.csv"))
 # LGBTQ POS
 LGTBQ_POS_HU = extract_pos_stanza(HU_LGBTQ)
-save_top_pos(LGTBQ_POS_HU, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/LGBTQ_POS_HU.csv') 
+save_top_pos(LGTBQ_POS_HU, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "LGBTQ_POS_HU.csv")) 
 
 # RO
 top_gender_RO = get_label_nouns(RO_Gender)
-save_top_nouns(top_gender_RO, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/top_gender_RO.csv')
+save_top_nouns(top_gender_RO, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "top_gender_RO.csv"))
 top_migration_RO = get_label_nouns(RO_Migration)
-save_top_nouns(top_migration_RO, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/top_migration_RO.csv')
+save_top_nouns(top_migration_RO, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "top_migration_RO.csv"))
 top_lgbtq_RO = get_label_nouns(RO_LGBTQ)
-save_top_nouns(top_lgbtq_RO, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/top_LGBTQ_RO.csv')
+save_top_nouns(top_lgbtq_RO, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "top_LGBTQ_RO.csv"))
 
 # Gender POS
 Gender_POS_RO = extract_pos(RO_Gender)
-save_top_pos(Gender_POS_RO, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/Gender_POS_RO.csv')
+save_top_pos(Gender_POS_RO, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "Gender_POS_RO.csv"))
 # Migration POS
 Migration_POS_RO = extract_pos(RO_Migration)
-save_top_pos(Migration_POS_RO, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/Migration_POS_RO.csv')
+save_top_pos(Migration_POS_RO, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "Migration_POS_RO.csv"))
 # LGBTQ POS
 LGTBQ_POS_RO = extract_pos(RO_LGBTQ)
-save_top_pos(LGTBQ_POS_RO, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/LGBTQ_POS_RO.csv')
+save_top_pos(LGTBQ_POS_RO, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "LGBTQ_POS_RO.csv"))
 
 ## BIGRAMS
 def extract_pos_merged(dataframe, n=40, batch_size=64):
@@ -355,48 +374,48 @@ def extract_stanza_bigrams(df, text_col="span", n=40, window=2):
 
 # UK
 UK_bigrams_Gender = extract_stanza_bigrams(UK_Gender)
-save_top_pos(UK_bigrams_Gender, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/UK_bigrams_Gender.csv')
+save_top_pos(UK_bigrams_Gender, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "UK_bigrams_Gender.csv"))
 UK_bigrams_Migration = extract_stanza_bigrams(UK_Migration)
-save_top_pos(UK_bigrams_Migration, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/UK_bigrams_Migration.csv')
+save_top_pos(UK_bigrams_Migration, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "UK_bigrams_Migration.csv"))
 UK_bigrams_LGBTQ = extract_stanza_bigrams(UK_LGBTQ)
-save_top_pos(UK_bigrams_LGBTQ, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/UK_bigrams_LGBTQ.csv')
+save_top_pos(UK_bigrams_LGBTQ, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "UK_bigrams_LGBTQ.csv"))
 
 # FR
 FR_bigrams_Gender = extract_stanza_bigrams(FR_Gender)
-save_top_pos(FR_bigrams_Gender, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/FR_bigrams_Gender.csv')
+save_top_pos(FR_bigrams_Gender, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "FR_bigrams_Gender.csv"))
 FR_bigrams_Migration = extract_stanza_bigrams(FR_Migration)
-save_top_pos(FR_bigrams_Migration, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/FR_bigrams_Migration.csv')
+save_top_pos(FR_bigrams_Migration, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "FR_bigrams_Migration.csv"))
 FR_bigrams_LGBQT = extract_stanza_bigrams(FR_LGBTQ)
-save_top_pos(FR_bigrams_LGBQT, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/FR_bigrams_LGBQT.csv')
+save_top_pos(FR_bigrams_LGBQT, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "FR_bigrams_LGBQT.csv"))
 
 # RO 
 RO_bigrams_Gender = extract_stanza_bigrams(RO_Gender)
-save_top_pos(RO_bigrams_Gender, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/RO_bigrams_Gender.csv')
+save_top_pos(RO_bigrams_Gender, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "RO_bigrams_Gender.csv"))
 RO_bigrams_Migration = extract_stanza_bigrams(RO_Migration)
-save_top_pos(RO_bigrams_Migration, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/RO_bigrams_Migration.csv')
+save_top_pos(RO_bigrams_Migration, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "RO_bigrams_Migration.csv"))
 RO_bigrams_LGBQT = extract_stanza_bigrams(RO_LGBTQ)
-save_top_pos(RO_bigrams_LGBQT, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/RO_bigrams_LGBQT.csv')
+save_top_pos(RO_bigrams_LGBQT, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "RO_bigrams_LGBQT.csv"))
 
 # SE
 SE_bigrams_Gender = extract_stanza_bigrams(SE_Gender)
-save_top_pos(SE_bigrams_Gender, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/SE_bigrams_Gender.csv')
+save_top_pos(SE_bigrams_Gender, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "SE_bigrams_Gender.csv"))
 SE_bigrams_Migration = extract_stanza_bigrams(SE_Migration)
-save_top_pos(SE_bigrams_Migration, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/SE_bigrams_Migration.csv')
+save_top_pos(SE_bigrams_Migration, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "SE_bigrams_Migration.csv"))
 SE_bigrams_LGBTQ = extract_stanza_bigrams(SE_LGBTQ)
-save_top_pos(SE_bigrams_LGBTQ, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/SE_bigrams_LGBTQ.csv')
+save_top_pos(SE_bigrams_LGBTQ, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "SE_bigrams_LGBTQ.csv"))
 
 # HU
 HU_bigrams_Gender = extract_stanza_bigrams(HU_Gender)
-save_top_pos(HU_bigrams_Gender, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/HU_bigrams_Gender.csv')
+save_top_pos(HU_bigrams_Gender, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "HU_bigrams_Gender.csv"))
 HU_bigrams_Migration = extract_stanza_bigrams(HU_Migration)
-save_top_pos(HU_bigrams_Migration, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/HU_bigrams_Migration.csv')
+save_top_pos(HU_bigrams_Migration, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "HU_bigrams_Migration.csv"))
 HU_bigrams_LGBTQ = extract_stanza_bigrams(HU_LGBTQ)
-save_top_pos(HU_bigrams_LGBTQ, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/HU_bigrams_LGBTQ.csv')
+save_top_pos(HU_bigrams_LGBTQ, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "HU_bigrams_LGBTQ.csv"))
 
 # ES
 ES_bigrams_Gender = extract_stanza_bigrams(ES_Gender)
-save_top_pos(ES_bigrams_Gender, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/ES_bigrams_Gender.csv')
+save_top_pos(ES_bigrams_Gender, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "ES_bigrams_Gender.csv"))
 ES_bigrams_Migration = extract_stanza_bigrams(ES_Migration)
-save_top_pos(ES_bigrams_Migration, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/ES_bigrams_Migration.csv')
+save_top_pos(ES_bigrams_Migration, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "ES_bigrams_Migration.csv"))
 ES_bigrams_LGTBTQ = extract_stanza_bigrams(ES_LGBTQ)
-save_top_pos(ES_bigrams_LGTBTQ, '/work/YOU-DARE/controversy-mapping/keyword-analysis/keywords/ES_bigrams_LGTBTQ.csv')
+save_top_pos(ES_bigrams_LGTBTQ, str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "keywords" / "ES_bigrams_LGTBTQ.csv"))

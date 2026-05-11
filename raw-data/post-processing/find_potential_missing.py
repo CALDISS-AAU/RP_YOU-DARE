@@ -1,8 +1,26 @@
-import pandas as pd
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+import pandas as pd
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 # find paths
-combined_data_dir = Path("/work/YOU-DARE/raw-data/")
+combined_data_dir = REPO_ROOT / "raw-data"
 data_files_paths = list(combined_data_dir.rglob("*.jl"))
 
 # text columns to coalesce
@@ -54,7 +72,7 @@ else:
     
 print(string_out)
 
-path_out = "/work/YOU-DARE/raw-data/post-processing/candidate-missing.txt"
+path_out = str(REPO_ROOT / "raw-data" / "post-processing" / "candidate-missing.txt")
 
 with open(path_out, 'w') as f:
     f.write(string_out)

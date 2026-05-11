@@ -1,8 +1,26 @@
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 import pandas as pd
 import numpy as np
-from pathlib import Path
 import json
 import re
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 all_countries = [
     'DK',
@@ -14,9 +32,9 @@ all_countries = [
     'SE',
     'UK'
 ]
-full_datasets_folder_path = '/work/YOU-DARE/raw-data/final_raw/'
+full_datasets_folder_path = str(REPO_ROOT / "raw-data" / "final_raw")
 full_datasets_file_ending = '_YOUDARE-WEBDATA_combined.jsonl'
-reduced_datasets_folder_path = '/work/YOU-DARE/controversy-mapping/sentence_filtering/reduced_data/'
+reduced_datasets_folder_path = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "reduced_data")
 reduced_datasets_file_ending = '_reduced.jl'
 
 def import_data(input_file_path: str, country=''):

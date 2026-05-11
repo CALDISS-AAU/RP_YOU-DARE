@@ -1,7 +1,25 @@
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 import json
 import math
-from pathlib import Path
 from collections import Counter, defaultdict
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 all_countries = [
     'DK', 
@@ -14,9 +32,9 @@ all_countries = [
     'UK'
     ]
 
-input_folder = Path('/work/YOU-DARE/raw-data/final_raw')
+input_folder = REPO_ROOT / "raw-data" / "final_raw"
 
-log_dir = Path('/work/YOU-DARE/raw-data/data_combiner/logs/validation')
+log_dir = REPO_ROOT / "raw-data" / "data_combiner" / "logs" / "validation"
 log_dir.mkdir(parents=True, exist_ok=True)
 log_path = log_dir / "column_type_validation.log"
 

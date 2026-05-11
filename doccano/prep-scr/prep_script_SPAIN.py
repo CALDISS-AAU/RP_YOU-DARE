@@ -1,4 +1,23 @@
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 from .functions.functions import Doccano_Functions
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 ''' To run this scraper from bash do the following:
         python -m YOU-DARE.doccano.prep_script_SPAIN
@@ -39,7 +58,7 @@ SPAIN_from_date = '2017-01-01'
 SPAIN_to_date = '2025-06-30'
 
 # Step 2: Find all datasets that should be prepared for doccano
-SPAIN_data_directory = '/work/YOU-DARE/scrapers/data/Spain' # All datasets for the TEST-country (could also be e.g. '/work/YOU-DARE/scrapers/data/TEST_COUNTRY/Telegram' if one only want to prepare telegram datasets)
+SPAIN_data_directory = str(REPO_ROOT / "scrapers" / "data" / "Spain") # All datasets for the TEST-country (could also be e.g. str(REPO_ROOT / "scrapers" / "data" / "TEST_COUNTRY" / "Telegram") if one only want to prepare telegram datasets)
 list_of_SPAIN_dataset_paths = doccano.get_all_dataset_paths(SPAIN_data_directory) # Finds all datasets within this folderstructure that ends with '_YT.jl', '_SPIDER.jl', '_MANUAL.jl' or '_TELEGRAM.jl'
 
 # Step 3: Prepare said datasets for doccano
@@ -62,7 +81,7 @@ for dataset_path in list_of_SPAIN_dataset_paths:
 CATALUNYAAC_keywords_raw = """*real*;*biològ*; *biolog*; *natural*; binari*; *sex*; ideologia de gènere; dos sexes; matern*; nen*; casa*; cures; dret*; custòdi*; *gènere*; *genere*; *masculí*; *masculi*; fort*; força; forces; cos; múscul*; muscul*; *femen*; *femin*; mare*; pare*; sensib*; *afect*; dolç*; gay; lesbi*; maric*; mariet*; boller*; trans*; lobb*; pecat*; deu; divi*; diví; esglesi*; catòlic*; catolic*; mesquit*; wok*; *igual*; mèdic*; medic*; malalt*; hormon*; bany*; lavabo*; adolescen*; càrcel*; carcel*; preso*; *famíl*; *famil*; matrim*; hetero; homo*; descend*; herenci*; hereu*; herev*; legítim*; legitim*; deure*; violèn*; violen*; consen*; viola*; agressi*; dany*; víctim*; victim*; domèst*; domest*; quot*; misogin*; misandr*; zorr*; puta; putes; *vergony*; mentid*; veritat*; assassi*; manting*; charo; charitat; charidad; ofendid*; ofes*; fals*; discrimina*; bretx*; *avort*; vida; nounat*; concepció*; concepcio*; reproduc*; *vitro; subrog*; mora*; moro*; *migrant*; estranger*; *pernil*; *jamón*; *jamon*; patera*; delinquèn*; delinquen*; musulm*; islam*; avi*; *landia; panx*; ventre*; conill*; rata*; *democr*; escola*; col·leg*; *doctrin*; escolar*; home*; dona; dones; *coloni*; imperi*; universi*; professor*; guarr*; piojo*; pater*; patriarc*; matriarc*; incel*; alfa*; beta*; hipergamia; mascl*; ruin*; crist*; papa*; mama*; laic*; *conquest*; espany*; europ*; catalu*; català*; catala*; *reemplaç*; *natal*; invasi*; hivern demogràfic; hivern demografic; naixement*; nascu*; bebe*; croad*; reixat*; fronter*; melill*; ceut*; amenaç*; muro*; *pàtria*; *patria*; *legal*; blanc*; negr*; marroc; marroquí*; marroqui*; àfrica*; africa*; terroris*"""
 CATALUNYAAC_keywords = [w.strip() for w in CATALUNYAAC_keywords_raw.split(";")]
 
-CATALUNYAAC_data_directory = '/work/YOU-DARE/scrapers/data/Spain/Telegram/catalunyaac' # Only the single source folder
+CATALUNYAAC_data_directory = str(REPO_ROOT / "scrapers" / "data" / "Spain" / "Telegram" / "catalunyaac") # Only the single source folder
 list_of_CATALUNYAAC_dataset_paths = doccano.get_all_dataset_paths(CATALUNYAAC_data_directory) 
 
 for dataset_path in list_of_CATALUNYAAC_dataset_paths:
@@ -72,7 +91,7 @@ for dataset_path in list_of_CATALUNYAAC_dataset_paths:
 ANTHONY_COREY_SANCHEZ_keywords_raw = """*real*;*biològ*; *biolog*; *natural*; binari*; *sex*; ideologia de gènere; dos sexes; matern*; nen*; casa*; cures; dret*; custòdi*; *gènere*; *genere*; *masculí*; *masculi*; fort*; força; forces; cos; múscul*; muscul*; *femen*; *femin*; mare*; pare*; sensib*; *afect*; dolç*; gay; lesbi*; maric*; mariet*; boller*; trans*; lobb*; pecat*; deu; divi*; diví; esglesi*; catòlic*; catolic*; mesquit*; wok*; *igual*; mèdic*; medic*; malalt*; hormon*; bany*; lavabo*; adolescen*; càrcel*; carcel*; preso*; *famíl*; *famil*; matrim*; hetero; homo*; descend*; herenci*; hereu*; herev*; legítim*; legitim*; deure*; violèn*; violen*; consen*; viola*; agressi*; dany*; víctim*; victim*; domèst*; domest*; quot*; misogin*; misandr*; zorr*; puta; putes; *vergony*; mentid*; veritat*; assassi*; manting*; charo; charitat; charidad; ofendid*; ofes*; fals*; discrimina*; bretx*; *avort*; vida; nounat*; concepció*; concepcio*; reproduc*; *vitro; subrog*; mora*; moro*; *migrant*; estranger*; *pernil*; *jamón*; *jamon*; patera*; delinquèn*; delinquen*; musulm*; islam*; avi*; *landia; panx*; ventre*; conill*; rata*; *democr*; escola*; col·leg*; *doctrin*; escolar*; home*; dona; dones; *coloni*; imperi*; universi*; professor*; guarr*; piojo*; pater*; patriarc*; matriarc*; incel*; alfa*; beta*; hipergamia; mascl*; ruin*; crist*; papa*; mama*; laic*; *conquest*; espany*; europ*; catalu*; català*; catala*; *reemplaç*; *natal*; invasi*; hivern demogràfic; hivern demografic; naixement*; nascu*; bebe*; croad*; reixat*; fronter*; melill*; ceut*; amenaç*; muro*; *pàtria*; *patria*; *legal*; blanc*; negr*; marroc; marroquí*; marroqui*; àfrica*; africa*; terroris*"""
 ANTHONY_COREY_SANCHEZ_keywords = [w.strip() for w in ANTHONY_COREY_SANCHEZ_keywords_raw.split(";")]
 
-ANTHONY_COREY_SANCHEZ_data_directory = '/work/YOU-DARE/scrapers/data/Spain/antony_sanchez_YT' # Only the single source folder
+ANTHONY_COREY_SANCHEZ_data_directory = str(REPO_ROOT / "scrapers" / "data" / "Spain" / "antony_sanchez_YT") # Only the single source folder
 list_of_ANTHONY_COREY_SANCHEZ_dataset_paths = doccano.get_all_dataset_paths(ANTHONY_COREY_SANCHEZ_data_directory)
 
 for dataset_path in list_of_ANTHONY_COREY_SANCHEZ_dataset_paths:
@@ -82,7 +101,7 @@ for dataset_path in list_of_ANTHONY_COREY_SANCHEZ_dataset_paths:
 LA_CATALUNYA_WOKE_keywords_raw = """*real*;*biològ*; *biolog*; *natural*; binari*; *sex*; ideologia de gènere; dos sexes; matern*; nen*; casa*; cures; dret*; custòdi*; *gènere*; *genere*; *masculí*; *masculi*; fort*; força; forces; cos; múscul*; muscul*; *femen*; *femin*; mare*; pare*; sensib*; *afect*; dolç*; gay; lesbi*; maric*; mariet*; boller*; trans*; lobb*; pecat*; deu; divi*; diví; esglesi*; catòlic*; catolic*; mesquit*; wok*; *igual*; mèdic*; medic*; malalt*; hormon*; bany*; lavabo*; adolescen*; càrcel*; carcel*; preso*; *famíl*; *famil*; matrim*; hetero; homo*; descend*; herenci*; hereu*; herev*; legítim*; legitim*; deure*; violèn*; violen*; consen*; viola*; agressi*; dany*; víctim*; victim*; domèst*; domest*; quot*; misogin*; misandr*; zorr*; puta; putes; *vergony*; mentid*; veritat*; assassi*; manting*; charo; charitat; charidad; ofendid*; ofes*; fals*; discrimina*; bretx*; *avort*; vida; nounat*; concepció*; concepcio*; reproduc*; *vitro; subrog*; mora*; moro*; *migrant*; estranger*; *pernil*; *jamón*; *jamon*; patera*; delinquèn*; delinquen*; musulm*; islam*; avi*; *landia; panx*; ventre*; conill*; rata*; *democr*; escola*; col·leg*; *doctrin*; escolar*; home*; dona; dones; *coloni*; imperi*; universi*; professor*; guarr*; piojo*; pater*; patriarc*; matriarc*; incel*; alfa*; beta*; hipergamia; mascl*; ruin*; crist*; papa*; mama*; laic*; *conquest*; espany*; europ*; catalu*; català*; catala*; *reemplaç*; *natal*; invasi*; hivern demogràfic; hivern demografic; naixement*; nascu*; bebe*; croad*; reixat*; fronter*; melill*; ceut*; amenaç*; muro*; *pàtria*; *patria*; *legal*; blanc*; negr*; marroc; marroquí*; marroqui*; àfrica*; africa*; terroris*"""
 LA_CATALUNYA_WOKE_keywords = [w.strip() for w in LA_CATALUNYA_WOKE_keywords_raw.split(";")]
 
-LA_CATALUNYA_WOKE_data_directory = '/work/YOU-DARE/scrapers/data/Spain/la_catalunya_woke_YT' # Only the single source folder
+LA_CATALUNYA_WOKE_data_directory = str(REPO_ROOT / "scrapers" / "data" / "Spain" / "la_catalunya_woke_YT") # Only the single source folder
 list_of_LA_CATALUNYA_WOKE_dataset_paths = doccano.get_all_dataset_paths(LA_CATALUNYA_WOKE_data_directory)
 
 for dataset_path in list_of_LA_CATALUNYA_WOKE_dataset_paths:
@@ -111,7 +130,7 @@ VOX_ranges = [
     ('2025-06-15','2025-07-14'),
 ]
 
-VOX_data_directory = '/work/YOU-DARE/scrapers/data/Spain/vox_espana_YT' # Only the single source folder
+VOX_data_directory = str(REPO_ROOT / "scrapers" / "data" / "Spain" / "vox_espana_YT") # Only the single source folder
 list_of_VOX_dataset_paths = doccano.get_all_dataset_paths(VOX_data_directory)
 
 for dataset_path in list_of_VOX_dataset_paths:

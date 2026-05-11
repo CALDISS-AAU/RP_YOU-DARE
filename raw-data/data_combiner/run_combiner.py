@@ -9,6 +9,24 @@
 - Adds actor variable/key
 - Writes to final_raw/{cntr}_YOUDARE-WEBDATA_combined.jsonl as a combined jsonl - streams one dataset at the time (also avoid including irrelevant keys from other platforms)
 """
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 '''
 source ./YOU-DARE/environment/bin/activate
@@ -24,7 +42,6 @@ python -m run_combiner --country "UK"
     
 
 import argparse
-from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 import json
@@ -34,10 +51,10 @@ from modules.standardizers import telegram_to_threads, standardize_yt, standardi
 from modules.pathresolver import determine_datafile_platform
 from modules.readers import read_telegram, read_jsonl_chunks
 
-COMBINED_OUT_DIR = "/work/YOU-DARE/raw-data/final_raw"
-SCRAPER_DATA_DIR = "/work/YOU-DARE/scrapers/data"
-SOURCE_ACTOR_MAPPING_P = "/work/YOU-DARE/raw-data/mappings/actor_mapping.json"
-LOG_DIR = "/work/YOU-DARE/raw-data/data_combiner/logs"
+COMBINED_OUT_DIR = str(REPO_ROOT / "raw-data" / "final_raw")
+SCRAPER_DATA_DIR = str(REPO_ROOT / "scrapers" / "data")
+SOURCE_ACTOR_MAPPING_P = str(REPO_ROOT / "raw-data" / "mappings" / "actor_mapping.json")
+LOG_DIR = str(REPO_ROOT / "raw-data" / "data_combiner" / "logs")
 
 # mapping country abv to scraping data subdir
 COUNTRY_MAP = { # ISO 3166 alpha-2 pls

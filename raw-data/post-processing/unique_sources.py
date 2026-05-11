@@ -1,6 +1,24 @@
+from pathlib import Path
 import os
+from dotenv import load_dotenv
+
 import json
 import csv
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
 
 def collect_unique_sources(folder_path, output_file):
     unique_sources = set()
@@ -33,6 +51,6 @@ def collect_unique_sources(folder_path, output_file):
 
 
 if __name__ == "__main__":
-    folder = "/work/YOU-DARE/raw-data/"
+    folder = str(REPO_ROOT / "raw-data")
     output = "unique_sources.csv"
     collect_unique_sources(folder, output)

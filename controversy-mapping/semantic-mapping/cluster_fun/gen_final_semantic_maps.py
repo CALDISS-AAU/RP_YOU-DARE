@@ -3,8 +3,10 @@ Generating final maps for deliverable.
 """
 
 from __future__ import annotations
-
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 import argparse
 import sys
 import warnings
@@ -15,10 +17,25 @@ import numpy as np
 
 from modules.plotting import gen_semantic_map
 
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
+
 ## DATA DIRS
-UMAP_IN_DIR = Path("/work/YOU-DARE/controversy-mapping/semantic-mapping/output/umap_positions") # Path to dir with chunk and actor UMAP coordinates
-REGIONS_IN_DIR = Path("/work/YOU-DARE/controversy-mapping/semantic-mapping/plots/semantic-maps_analyze") # Path to dir with regions to annotate
-MAPS_OUT_DIR = Path("/work/YOU-DARE/controversy-mapping/semantic-mapping/plots/semantic-maps_deliverable") # Path to dir for output
+UMAP_IN_DIR = REPO_ROOT / "controversy-mapping" / "semantic-mapping" / "output" / "umap_positions" # Path to dir with chunk and actor UMAP coordinates
+REGIONS_IN_DIR = REPO_ROOT / "controversy-mapping" / "semantic-mapping" / "plots" / "semantic-maps_analyze" # Path to dir with regions to annotate
+MAPS_OUT_DIR = REPO_ROOT / "controversy-mapping" / "semantic-mapping" / "plots" / "semantic-maps_deliverable" # Path to dir for output
 
 ## Countries and themes
 COUNTRIES = {

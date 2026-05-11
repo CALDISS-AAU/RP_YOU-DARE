@@ -3,8 +3,10 @@ Pipeline for semantic mapping
 """
 
 from __future__ import annotations
-
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 import argparse
 import sys
 import warnings
@@ -18,42 +20,57 @@ from modules.data_ingestion import sentences_to_chunks,sentences_to_chunk_mp, Ch
 from modules.semantic_mapping_func import EmbeddingConfig, DimensionConfig
 from modules.matcher import mask_keywords
 
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
+
 ## Embeddings outdir
-embeddings_out = Path("/work/YOU-DARE/controversy-mapping/semantic-mapping/output/embeddings_masked/")
+embeddings_out = REPO_ROOT / "controversy-mapping" / "semantic-mapping" / "output" / "embeddings_masked"
 embeddings_out.mkdir(parents=True, exist_ok=True)
 
 
 ## Input data
 LGB_paths = [
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/DK/DK_lgb_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/ES/ES_lgb_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/FR/FR_lgb_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/HU/HU_lgb_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/IT/IT_lgb_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/RO/RO_lgb_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/SWE/SWE_lgb_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/UK/UK_lgb_matched.jl"
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "DK" / "DK_lgb_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "ES" / "ES_lgb_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "FR" / "FR_lgb_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "HU" / "HU_lgb_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "IT" / "IT_lgb_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "RO" / "RO_lgb_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "SWE" / "SWE_lgb_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "UK" / "UK_lgb_matched.jl")
 ]
 Migration_paths = [
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/DK/DK_migration_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/ES/ES_migration_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/FR/FR_migration_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/HU/HU_migration_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/IT/IT_migration_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/RO/RO_migration_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/SWE/SWE_migration_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/UK/UK_migration_matched.jl"
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "DK" / "DK_migration_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "ES" / "ES_migration_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "FR" / "FR_migration_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "HU" / "HU_migration_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "IT" / "IT_migration_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "RO" / "RO_migration_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "SWE" / "SWE_migration_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "UK" / "UK_migration_matched.jl")
 ]
 
 woke_paths = [
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/DK/DK_woke_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/ES/ES_woke_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/FR/FR_woke_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/HU/HU_woke_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/IT/IT_woke_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/RO/RO_woke_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/SWE/SWE_woke_matched.jl",
-    "/work/YOU-DARE/controversy-mapping/sentence_filtering/matched_data/UK/UK_woke_matched.jl"
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "DK" / "DK_woke_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "ES" / "ES_woke_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "FR" / "FR_woke_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "HU" / "HU_woke_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "IT" / "IT_woke_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "RO" / "RO_woke_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "SWE" / "SWE_woke_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "UK" / "UK_woke_matched.jl")
 ]
 
 all_paths = LGB_paths + Migration_paths + woke_paths

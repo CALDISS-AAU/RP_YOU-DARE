@@ -1,4 +1,7 @@
+from pathlib import Path
 import os
+from dotenv import load_dotenv
+
 import sys 
 import numpy as np
 import pandas as pd
@@ -10,11 +13,27 @@ import seaborn
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
+
+ENV_PATH = next(
+    (
+        parent / ".env"
+        for parent in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]
+        if (parent / ".env").exists()
+    ),
+    None,
+)
+if ENV_PATH is None:
+    raise FileNotFoundError("Could not locate .env")
+
+load_dotenv(ENV_PATH)
+REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
+
+
 pio.templates.default = "plotly_white"
 pio.renderers.default = "browser"
 
 # Functions
-sys.path.append("/work/YOU-DARE/doccano")
+sys.path.append(str(REPO_ROOT / "doccano"))
 from functions.functions import Doccano_Functions
 doccano = Doccano_Functions()
 
@@ -140,14 +159,14 @@ def create_counts_tg(df):
 
 
 # Defining dataset dirs
-HUNGARY_data_directory = '/work/YOU-DARE/scrapers/data/Hungary'
-FRANCE_data_directory = '/work/YOU-DARE/scrapers/data/France'
-ITALY_data_directory = '/work/YOU-DARE/scrapers/data/Italy'
-UK_data_directory = '/work/YOU-DARE/scrapers/data/United_Kingdom'
-ROMANIA_data_directory = '/work/YOU-DARE/scrapers/data/Romania'
-SPAIN_data_directory = '/work/YOU-DARE/scrapers/data/Spain'
-SWEDEN_data_directory = '/work/YOU-DARE/scrapers/data/Sweden'
-DENMARK_data_directory = '/work/YOU-DARE/scrapers/data/Denmark'
+HUNGARY_data_directory = str(REPO_ROOT / "scrapers" / "data" / "Hungary")
+FRANCE_data_directory = str(REPO_ROOT / "scrapers" / "data" / "France")
+ITALY_data_directory = str(REPO_ROOT / "scrapers" / "data" / "Italy")
+UK_data_directory = str(REPO_ROOT / "scrapers" / "data" / "United_Kingdom")
+ROMANIA_data_directory = str(REPO_ROOT / "scrapers" / "data" / "Romania")
+SPAIN_data_directory = str(REPO_ROOT / "scrapers" / "data" / "Spain")
+SWEDEN_data_directory = str(REPO_ROOT / "scrapers" / "data" / "Sweden")
+DENMARK_data_directory = str(REPO_ROOT / "scrapers" / "data" / "Denmark")
 
 # Get all dataset file paths
 list_of_HUNGARY_dataset_paths = doccano.get_all_dataset_paths(HUNGARY_data_directory)
@@ -289,4 +308,4 @@ fig.update_layout(
 )
 
 fig.show()
-fig.write_html('/work/YOU-DARE/controversy-mapping/keyword-analysis/res/Activity share_HU_web.html')
+fig.write_html(str(REPO_ROOT / "controversy-mapping" / "keyword-analysis" / "res" / "Activity share_HU_web.html"))
