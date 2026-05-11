@@ -37,7 +37,7 @@ all_themes = [
     'woke'
 ]
 
-input_folder = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data")
+input_folder = str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data")
 
 def merge_unique_keywords(series):
     seen = set()
@@ -50,7 +50,7 @@ def merge_unique_keywords(series):
     return merged
 
 for country in all_countries:
-    output_folder = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "indexed_data" / f"{country}")
+    output_folder = str(REPO_ROOT / "controversy-mapping" / "data" / "indexed_data" / f"{country}")
     for theme in all_themes:
         input_file_path = f'{input_folder}/{country}/{country}_{theme}_matched.jl'
         print(input_file_path)

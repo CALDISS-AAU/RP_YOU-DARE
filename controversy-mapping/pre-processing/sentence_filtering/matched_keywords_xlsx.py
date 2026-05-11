@@ -36,9 +36,9 @@ all_themes = [
     'woke'
 ]
 
-input_folder_path = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data")
+input_folder_path = str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data")
 input_file_ending = '_matched.jl'
-output_folder_path = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "keyword_related_data" / "matched_words_xlsx")
+output_folder_path = str(REPO_ROOT / "controversy-mapping" / "data" / "keywords" / "matched_words_xlsx")
 
 for country in all_countries:
     output_file_path = f'{output_folder_path}/{country}_matched_words.xlsx'

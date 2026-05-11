@@ -34,7 +34,7 @@ all_countries = [
 ]
 full_datasets_folder_path = str(REPO_ROOT / "raw-data" / "final_raw")
 full_datasets_file_ending = '_YOUDARE-WEBDATA_combined.jsonl'
-reduced_datasets_folder_path = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "reduced_data")
+reduced_datasets_folder_path = str(REPO_ROOT / "controversy-mapping" / "data" / "reduced_data")
 reduced_datasets_file_ending = '_reduced.jl'
 
 def import_data(input_file_path: str, country=''):

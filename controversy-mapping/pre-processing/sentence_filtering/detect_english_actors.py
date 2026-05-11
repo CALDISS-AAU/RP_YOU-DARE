@@ -33,10 +33,10 @@ all_countries = [
     'SE'
 ]
 
-input_dir = REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "reduced_data"
+input_dir = REPO_ROOT / "controversy-mapping" / "data" / "reduced_data"
 input_file_ending = '_reduced.jl'
 
-output_path = REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "english_actor_detection" / "english_actor_summary.txt"
+output_path = REPO_ROOT / "controversy-mapping" / "data" / "english_actor_detection" / "english_actor_summary.txt"
 output_path.parent.mkdir(parents=True, exist_ok=True)
 
 

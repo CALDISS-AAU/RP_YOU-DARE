@@ -34,13 +34,13 @@ all_countries = [
     'UK'
 ]
 
-datasets_folder_path = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "reduced_data")
+datasets_folder_path = str(REPO_ROOT / "controversy-mapping" / "data" / "reduced_data")
 datasets_file_ending = '_reduced.jl'
-keyword_lists_folder_path = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "keyword_related_data" / "keyword_lists")
+keyword_lists_folder_path = str(REPO_ROOT / "controversy-mapping" / "data" / "keywords" / "keyword_lists")
 keyword_lists_file_ending = '_keywords_lists.txt'
-false_positives_lists_folder_path = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "keyword_related_data" / "false_positives_lists")
+false_positives_lists_folder_path = str(REPO_ROOT / "controversy-mapping" / "data" / "keywords" / "false_positives_lists")
 false_positives_lists_file_ending = '_false_positives_lists.txt'
-matched_datasets_folder_path = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data")
+matched_datasets_folder_path = str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data")
 matched_datasets_file_ending = '_matched.jl'
 
 english_speaking_actors = {

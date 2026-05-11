@@ -43,7 +43,7 @@ Embeddings forventes i:
 
 ## Brug
 
-Sørg for at stå i `semantic-mapping` dir: `cd /work/YOU-DARE/controversy-mapping/semantic-mapping`.
+Sørg for at stå i `semantic-mapping` dir: `cd ./controversy-mapping/semantic-mapping`.
 
 Aktivér conda miljø.
 
@@ -70,7 +70,7 @@ python -m cluster_fun.make_da_map --country DK --theme migration
 
 En interaktiv UMAP-visualisering gemmes som HTML-fil:
 ```
-/work/YOU-DARE/controversy-mapping/semantic-mapping/plots/country_plots/{country}_{theme}_umap.html
+./controversy-mapping/semantic-mapping/plots/country_plots/{country}_{theme}_umap.html
 ```
 
 Plottet viser både chunk, clustering og aktør-positioner i det reducerede rum.
@@ -102,4 +102,4 @@ Parametre er sat ud fra en generel standard. Disse kan ændres
 ---
 
 ## Særlige tilfælde
-Kilder der indeholder `flashback` fjernes automatisk fra datasættet. Dette er kun gældende for **Sverige (SWE)**
+Kilder der indeholder `flashback` fjernes automatisk fra datasættet. Dette er kun gældende for **Sverige (SE)**

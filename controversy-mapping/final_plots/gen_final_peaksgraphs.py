@@ -38,7 +38,7 @@ REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
 # Options: "D" - day, "W" - week, "2W" - biweekly, "ME" - month, "2ME" - bimonthly, "QE" - quarter, "YE" - year
 AGG_FREQ_USE = "ME"
 
-INDEXED_DATA_DIR = REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "indexed_data"
+INDEXED_DATA_DIR = REPO_ROOT / "controversy-mapping" / "data" / "indexed_data"
 FLAGGED_DIR = REPO_ROOT / "controversy-mapping" / "final_plots" / "input_data" / "D2.1 Timelines"
 MAPS_OUT_DIR = REPO_ROOT / "controversy-mapping" / "final_plots" / "plots" / "peaks_deliverable"
 #MAPS_OUT_DIR = REPO_ROOT / "controversy-mapping" / "final_plots" / "plots" / "peaks_test"

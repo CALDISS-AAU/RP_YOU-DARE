@@ -37,35 +37,35 @@ REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
 
 ## Input data
 LGB_paths = [
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "DK" / "DK_lgb_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "ES" / "ES_lgb_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "FR" / "FR_lgb_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "HU" / "HU_lgb_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "IT" / "IT_lgb_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "RO" / "RO_lgb_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "SWE" / "SWE_lgb_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "UK" / "UK_lgb_matched.jl")
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "DK" / "DK_lgb_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "ES" / "ES_lgb_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "FR" / "FR_lgb_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "HU" / "HU_lgb_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "IT" / "IT_lgb_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "RO" / "RO_lgb_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "SE" / "SE_lgb_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "UK" / "UK_lgb_matched.jl")
 ]
 Migration_paths = [
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "DK" / "DK_migration_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "ES" / "ES_migration_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "FR" / "FR_migration_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "HU" / "HU_migration_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "IT" / "IT_migration_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "RO" / "RO_migration_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "SWE" / "SWE_migration_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "UK" / "UK_migration_matched.jl")
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "DK" / "DK_migration_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "ES" / "ES_migration_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "FR" / "FR_migration_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "HU" / "HU_migration_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "IT" / "IT_migration_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "RO" / "RO_migration_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "SE" / "SE_migration_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "UK" / "UK_migration_matched.jl")
 ]
 
 woke_paths = [
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "DK" / "DK_woke_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "ES" / "ES_woke_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "FR" / "FR_woke_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "HU" / "HU_woke_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "IT" / "IT_woke_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "RO" / "RO_woke_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "SWE" / "SWE_woke_matched.jl"),
-    str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "matched_data" / "UK" / "UK_woke_matched.jl")
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "DK" / "DK_woke_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "ES" / "ES_woke_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "FR" / "FR_woke_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "HU" / "HU_woke_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "IT" / "IT_woke_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "RO" / "RO_woke_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "SE" / "SE_woke_matched.jl"),
+    str(REPO_ROOT / "controversy-mapping" / "data" / "matched_data" / "UK" / "UK_woke_matched.jl")
 ]
 
 all_paths = LGB_paths + Migration_paths + woke_paths

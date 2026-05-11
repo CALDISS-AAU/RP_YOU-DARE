@@ -60,7 +60,7 @@ def main(CONFIG_USE=CONFIG_USE, AGG_FREQ=AGG_FREQ_USE):
     )
     datainput_group.add_argument(
         "--data-dir", 
-        default=str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "indexed_data"),
+        default=str(REPO_ROOT / "controversy-mapping" / "data" / "indexed_data"),
         help="Path to input directory with JSONL files."
     )
     parser.add_argument(

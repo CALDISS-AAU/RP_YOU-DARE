@@ -49,9 +49,9 @@ cols_to_add_from_reduced = [
 number_of_texts_excel = 100 # Max number of texts pr peak pr topic pr country
 number_of_characters_excel = 300 # Max number of characters from each text
 
-input_data_folder = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "indexed_data")
+input_data_folder = str(REPO_ROOT / "controversy-mapping" / "data" / "indexed_data")
 input_peaks_folder = str(REPO_ROOT / "controversy-mapping" / "trend-analysis" / "output" / "peaks") # str(REPO_ROOT / "controversy-mapping" / "trend-analysis" / "output" / "peaks")
-reduced_data_folder = str(REPO_ROOT / "controversy-mapping" / "sentence_filtering" / "reduced_data")
+reduced_data_folder = str(REPO_ROOT / "controversy-mapping" / "data" / "reduced_data")
 output_folder = str(REPO_ROOT / "controversy-mapping" / "trend-analysis" / "output" / "packages_for_researchers") # str(REPO_ROOT / "controversy-mapping" / "trend-analysis" / "output" / "packages_for_researchers")
 
 # seed
