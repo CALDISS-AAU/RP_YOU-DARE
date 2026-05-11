@@ -48,13 +48,13 @@ except Exception:
 
 
 COUNTRIES=[
-    #"DK",
-    # "ES",
-    # "FR",
-    # "HU",
+    "DK",
+    "ES",
+    "FR",
+    "HU",
     "IT",
-    # "RO", 
-    # "SE",
+    "RO", 
+    "SE",
     "UK"
 ]
 
@@ -96,7 +96,7 @@ LANG_MAP = {
 TOP_N = 4000 # number of terms to include
 MAX_CHARS = 8000 # max length of text chunk (eases nlp processing)
 BATCH_SIZE = 64 # number of texts in batch to process at a time
-CPU_COUNT = 32 # NOTE: On UCloud, cores on machine type does not necessarily correspond to available cores. Also, not possible to extract number of cores via mp.cpu_count() (will just shows cores on the machine where the VM is running)
+CPU_COUNT = 12 # NOTE: On UCloud, cores on machine type does not necessarily correspond to available cores. Also, not possible to extract number of cores via mp.cpu_count() (will just shows cores on the machine where the VM is running)
 
 # data dirs
 indexed_data_folder = str(REPO_ROOT / "controversy-mapping" / "data" / "indexed_data")

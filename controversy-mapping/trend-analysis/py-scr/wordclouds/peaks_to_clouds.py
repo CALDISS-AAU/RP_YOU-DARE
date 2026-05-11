@@ -34,13 +34,13 @@ REPO_ROOT = Path(os.environ.get("YOUDARE_REPO_ROOT", ".")).resolve()
 
 
 COUNTRIES=[
-    #"DK",
-    # "ES",
-    # "FR",
-    # "HU",
+    "DK",
+    "ES",
+    "FR",
+    "HU",
     "IT",
-    # "RO", 
-    # "SE",
+    "RO", 
+    "SE",
     "UK"
 ]
 color_theme = "Paired" #"nipy_spectral"
