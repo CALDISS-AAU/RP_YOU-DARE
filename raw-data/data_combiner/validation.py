@@ -131,54 +131,6 @@ def value_type_label(v) -> str:
 
     return type(v).__name__
 
-
-# def stream_profile_jsonl(
-#     file_path: Path,
-#     examples_per_type=2,
-#     only_examples_for_types=("float",)
-# ):
-#     """
-#     Returns:
-#       counts_per_key: dict[key] -> Counter(type_label -> count)
-#       examples: dict[key] -> dict[type_label] -> list[full_row_dict]
-#       keyset_counts: Counter(frozenset(keys_in_row) -> count)
-#     Only considers keys present in each JSON row.
-#     """
-#     counts_per_key = defaultdict(Counter)
-#     examples = defaultdict(lambda: defaultdict(list))
-#     keyset_counts = Counter()
-
-#     with file_path.open("r", encoding="utf-8") as f:
-#         for line_no, line in enumerate(f, start=1):
-#             line = line.strip()
-#             if not line:
-#                 continue
-
-#             try:
-#                 row = json.loads(line)
-#             except json.JSONDecodeError:
-#                 # malformed line; skip
-#                 continue
-
-#             if not isinstance(row, dict):
-#                 # Unexpected structure; skip
-#                 continue
-
-#             # Track keyset for this row (keys present only)
-#             keyset_counts[frozenset(row.keys())] += 1
-
-#             # Only keys present in this row:
-#             for key, val in row.items():
-#                 t = value_type_label(val)
-#                 counts_per_key[key][t] += 1
-
-#                 # Store full-row examples (only for selected types, to keep logs manageable)
-#                 if only_examples_for_types is None or t in only_examples_for_types:
-#                     if len(examples[key][t]) < examples_per_type:
-#                         examples[key][t].append(row)
-
-#     return counts_per_key, examples, keyset_counts
-
 def stream_profile_jsonl(
     file_path: Path,
     expected_types: dict[str, str],
@@ -287,11 +239,6 @@ with open(log_path, "w", encoding="utf-8") as logf:
 
         log_line(logf, f"\n===== {country} | streaming {file_path.name} =====")
 
-        # counts_per_key, examples, keyset_counts = stream_profile_jsonl(
-        #     file_path,
-        #     examples_per_type=2,
-        #     only_examples_for_types=("float",)  # change to None if you want examples for all types
-        # )
         counts_per_key, examples, keyset_counts, mismatch_context = stream_profile_jsonl(
             file_path,
             expected_types=EXPECTED_TYPES,
@@ -303,20 +250,6 @@ with open(log_path, "w", encoding="utf-8") as logf:
         country_keyset_counts[country] = keyset_counts
         country_types_per_key[country] = {k: set(v.keys()) for k, v in counts_per_key.items()}
 
-        # Summary: types + counts for each key
-        # for key in sorted(counts_per_key.keys()):
-        #     c = counts_per_key[key]
-        #     types_sorted = ", ".join(sorted(c.keys()))
-        #     counts_str = ", ".join(f"{k}={v:,}" for k, v in c.most_common())
-
-        #     log_line(logf, f"{key}: {types_sorted}")
-        #     log_line(logf, f"  counts: {counts_str}")
-
-        #     # If floats appear, dump full-row examples
-        #     if "float" in c:
-        #         log_line(logf, f"  float row examples (full rows):")
-        #         for i, row in enumerate(examples[key].get("float", []), start=1):
-        #             log_line(logf, f"    [{i}] {json.dumps(row, ensure_ascii=False)}")
         observed_keys = set(counts_per_key.keys())
         expected_keys = set(EXPECTED_TYPES.keys())
 

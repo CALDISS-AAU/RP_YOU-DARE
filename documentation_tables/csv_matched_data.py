@@ -160,55 +160,6 @@ def to_json_safe_value(value):
 
     return value
 
-# def prepare_and_filter_df(
-#     df: pd.DataFrame,
-#     date_source_keys: list[str],
-#     date_order_by_pair: dict[tuple[str, str], str] | None = None,
-# ) -> pd.DataFrame:
-#     if df.empty:
-#         return df.copy()
-
-#     df = df.copy()
-
-#     if "actor" not in df.columns:
-#         df["actor"] = None
-#     if "platform" not in df.columns:
-#         df["platform"] = None
-
-#     # Use a TEMP column so we do not overwrite an existing "publication date" column
-#     unified_date_col = "__unified_publication_date__"
-#     df[unified_date_col] = None
-
-#     for key in date_source_keys:
-#         if key in df.columns:
-#             mask = df[unified_date_col].isna() | (
-#                 df[unified_date_col].astype(str).str.strip() == ""
-#             )
-#             df.loc[mask, unified_date_col] = df.loc[mask, key]
-
-#     # Parse the temp date column
-#     df = normalise_publication_dates(
-#         df,
-#         col_name=unified_date_col,
-#         date_order_by_pair=date_order_by_pair,
-#     )
-
-#     # Exclude Flashback
-#     df = df[df["platform"] != "Flashback"]
-
-#     # Keep only rows within the inclusive range
-#     in_range_mask = (
-#         df[unified_date_col].notna() &
-#         (df[unified_date_col] >= START_DATE) &
-#         (df[unified_date_col] <= END_DATE)
-#     )
-#     df = df[in_range_mask]
-
-#     # Optional: rename parsed temp column back to publication date
-#     df = df.rename(columns={unified_date_col: "publication date"})
-
-#     return df
-
 def prepare_and_filter_df(
     df: pd.DataFrame,
     date_source_keys: list[str],
@@ -253,81 +204,6 @@ def prepare_and_filter_df(
     df = df.rename(columns={unified_date_col: "publication date"})
 
     return df
-
-# def collect_date_audit_rows():
-#     audit_rows = []
-#     raw_pattern = os.path.join(RAW_DIR, "*_YOUDARE-WEBDATA_combined.jsonl")
-
-#     for filepath in sorted(glob.glob(raw_pattern)):
-#         country = get_country_from_raw_filename(filepath)
-#         if country not in COUNTRIES:
-#             continue
-
-#         df = load_jsonl_to_df(filepath)
-#         if df.empty:
-#             continue
-
-#         unified_date_col = "__unified_publication_date__"
-#         unified_source_col = "__unified_date_source_key__"
-#         raw_value_col = "__unified_publication_date_raw__"
-
-#         df = unify_date_source_columns(
-#             df,
-#             date_source_keys=DATE_SOURCE_KEYS,
-#             unified_date_col=unified_date_col,
-#             unified_source_col=unified_source_col,
-#         )
-
-#         # Preserve the raw chosen value exactly as it appears before parsing
-#         df[raw_value_col] = df[unified_date_col]
-
-#         df = normalise_publication_dates(
-#             df,
-#             col_name=unified_date_col,
-#             date_order_by_pair=DATE_ORDER_BY_PAIR,
-#         )
-
-#         normalized_day = df[unified_date_col].dt.normalize()
-
-#         status = pd.Series("UNPARSED_OR_EMPTY", index=df.index, dtype="object")
-
-#         inside_mask = (
-#             normalized_day.notna()
-#             & (normalized_day >= START_DATE_NORM)
-#             & (normalized_day <= END_DATE_NORM)
-#         )
-#         outside_mask = normalized_day.notna() & ~inside_mask
-
-#         status.loc[inside_mask] = "INSIDE_RANGE"
-#         status.loc[outside_mask] = "OUTSIDE_RANGE"
-
-#         for _, row in df.iterrows():
-#             parsed_dt = row[unified_date_col]
-#             parsed_date = (
-#                 parsed_dt.strftime("%Y-%m-%d")
-#                 if pd.notna(parsed_dt)
-#                 else ""
-#             )
-#             parsed_datetime = (
-#                 parsed_dt.strftime("%Y-%m-%d %H:%M:%S")
-#                 if pd.notna(parsed_dt)
-#                 else ""
-#             )
-
-#             audit_rows.append({
-#                 "Country": country_name(country),
-#                 "Country code": country,
-#                 "Source file": os.path.basename(filepath),
-#                 "Actor": row.get("actor"),
-#                 "Platform": row.get("platform"),
-#                 "Date source key used": row.get(unified_source_col),
-#                 "Raw date value": row.get(raw_value_col),
-#                 "Standardised date": parsed_date,
-#                 "Standardised datetime": parsed_datetime,
-#                 "Range status": status.loc[row.name],
-#             })
-
-#     return audit_rows
 
 def collect_date_audit_nested():
     nested = {}
@@ -413,28 +289,6 @@ def collect_date_audit_nested():
 
     return nested
 
-# def sort_date_audit_nested(nested):
-#     sorted_nested = {}
-
-#     for country in sorted(nested.keys()):
-#         sorted_nested[country] = {}
-
-#         for pair_key in sorted(nested[country].keys()):
-#             entries = nested[country][pair_key]
-
-#             def sort_key(item):
-#                 dt = pd.to_datetime(item["standardised_datetime"], errors="coerce")
-#                 return (
-#                     pd.isna(dt),  # False first, True last
-#                     dt if pd.notna(dt) else pd.Timestamp.max,
-#                     str(item.get("raw_date", "")),
-#                 )
-
-#             sorted_entries = sorted(entries, key=sort_key)
-#             sorted_nested[country][pair_key] = sorted_entries
-
-#     return sorted_nested
-
 def sort_date_audit_nested(nested):
     sorted_nested = {}
 
@@ -497,47 +351,6 @@ def write_date_log(rows, output_file):
 def write_date_log_nested_json(nested, output_file):
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(nested, f, ensure_ascii=False, indent=2)
-
-# def write_date_log_txt_by_country(nested, output_dir):
-#     os.makedirs(output_dir, exist_ok=True)
-
-#     for country in sorted(nested.keys()):
-#         lines = []
-#         lines.append(f"DATE LOG FOR {country} ({country_name(country)})")
-#         lines.append("=" * 80)
-#         lines.append("")
-#         lines.append(
-#             f"Included date range: {START_DATE_NORM.strftime('%Y-%m-%d')} to {END_DATE_NORM.strftime('%Y-%m-%d')}"
-#         )
-#         lines.append("")
-
-#         for pair_key in sorted(nested[country].keys()):
-#             lines.append(pair_key)
-#             lines.append("-" * len(pair_key))
-
-#             for item in nested[country][pair_key]:
-#                 raw_date = item.get("raw_date", "")
-#                 std_date = item.get("standardised_date", "")
-#                 std_dt = item.get("standardised_datetime", "")
-#                 range_status = item.get("range_status", "")
-#                 source_key = item.get("date_source_key", "")
-#                 source_file = item.get("source_file", "")
-
-#                 indicator = {
-#                     "INSIDE_RANGE": "[IN]",
-#                     "OUTSIDE_RANGE": "[OUT]",
-#                     "UNPARSED_OR_EMPTY": "[NA]",
-#                 }.get(range_status, "[?]")
-
-#                 lines.append(
-#                     f"{indicator} raw='{raw_date}' | std_date='{std_date}' | std_dt='{std_dt}' | source_key='{source_key}' | file='{source_file}'"
-#                 )
-
-#             lines.append("")
-
-#         output_file = os.path.join(output_dir, f"{country}_date_log.txt")
-#         with open(output_file, "w", encoding="utf-8") as f:
-#             f.write("\n".join(lines))
 
 def write_date_log_txt_by_country(nested, output_dir):
     os.makedirs(output_dir, exist_ok=True)
@@ -861,56 +674,6 @@ def build_log(
     lines.append(f"Total raw texts overall: {total_raw}")
 
     return "\n".join(lines)
-
-# def main():
-#     os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
-
-#     raw_totals, total_raw, raw_original_totals, total_raw_original = collect_raw_totals()
-#     indexed_counts = collect_indexed_counts()
-
-#     grouped_rows = {}
-#     indexed_totals_by_country = {}
-
-#     for item in indexed_counts:
-#         country = item["country"]
-#         count = item["count"]
-#         country_total = raw_totals.get(country, 0)
-
-#         row = {
-#             "theme": item["theme"],
-#             "count": count,
-#             "share_total": format_percentage(count, total_raw),
-#             "share_country": format_percentage(count, country_total),
-#         }
-
-#         grouped_rows.setdefault(country, []).append(row)
-#         indexed_totals_by_country[country] = indexed_totals_by_country.get(country, 0) + count
-
-#     total_indexed = sum(indexed_totals_by_country.values())
-#     rows = build_rows(grouped_rows)
-
-#     write_csv(rows, OUTPUT_CSV)
-#     write_docx(rows, OUTPUT_DOCX)
-
-#     log_text = build_log(
-#         indexed_counts=indexed_counts,
-#         raw_totals=raw_totals,
-#         total_raw=total_raw,
-#         indexed_totals_by_country=indexed_totals_by_country,
-#         total_indexed=total_indexed,
-#         raw_original_totals=raw_original_totals,
-#         total_raw_original=total_raw_original,
-#     )
-
-#     with open(OUTPUT_LOG, "w", encoding="utf-8") as f:
-#         f.write(log_text)
-
-#     print(f"Wrote CSV table to: {OUTPUT_CSV}")
-#     print(f"Wrote Word table to: {OUTPUT_DOCX}")
-#     print(f"Wrote log file to: {OUTPUT_LOG}")
-
-# if __name__ == "__main__":
-#     main()
 
 def main():
     os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
