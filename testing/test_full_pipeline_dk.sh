@@ -114,38 +114,37 @@ source /home/kgk/repos/RP_YOU-DARE/ydenv/bin/activate
 require_file "${RAW_DATASET_PATH}"
 
 run_step "1. Running extract_datasets.py for ${TARGET_COUNTRY}" \
-#  python "${CM_DIR}/pre-processing/sentence_filtering/extract_datasets.py" 
+  python "${CM_DIR}/pre-processing/sentence_filtering/extract_datasets.py" 
 require_file "${REDUCED_DATA_PATH}"
 
 run_step "2. Running keyword_matching.py for ${TARGET_COUNTRY}" \
-#  python "${CM_DIR}/pre-processing/sentence_filtering/keyword_matching.py"
+  python "${CM_DIR}/pre-processing/sentence_filtering/keyword_matching.py"
 check_theme_outputs "${MATCHED_DATA_DIR}/${TARGET_COUNTRY}_" "_matched.jl"
 
 run_step "3. Running index_data.py for ${TARGET_COUNTRY}" \
-#  python "${CM_DIR}/pre-processing/sentence_filtering/index_data.py" 
+  python "${CM_DIR}/pre-processing/sentence_filtering/index_data.py" 
 check_theme_outputs "${INDEXED_DATA_DIR}/${TARGET_COUNTRY}_" "_indexed.jl"
 
 run_step "4. Running peak_detection.py from trend-analysis" \
-#  bash -lc "cd '${CM_DIR}/trend-analysis' && '${PYTHON_BIN}' -m peak_detection --data-dir '${INDEXED_DATA_DIR}'"
+  bash -lc "cd '${CM_DIR}/trend-analysis' && '${PYTHON_BIN}' -m peak_detection --data-dir '${INDEXED_DATA_DIR}'"
 check_theme_outputs "${PEAKS_OUTPUT_DIR}/" "_peaks.json"
 
 run_step "5. Running date_filtering.py for ${TARGET_COUNTRY}" \
-#  python "${CM_DIR}/pre-processing/sentence_filtering/date_filtering.py" 
+  python "${CM_DIR}/pre-processing/sentence_filtering/date_filtering.py" 
 require_file "${RESEARCHER_OUTPUT_DIR}/sampling_log.json"
 require_any_match "${RESEARCHER_OUTPUT_DIR}/${TARGET_COUNTRY}" "sampled_texts.xlsx" "sampled text workbooks"
 
 run_step "6. Running extract_words_peaks_spacy.py for ${TARGET_COUNTRY}" \
-#  python "${CM_DIR}/trend-analysis/py-scr/wordclouds/extract_words_peaks_spacy.py" 
+  python "${CM_DIR}/trend-analysis/py-scr/wordclouds/extract_words_peaks_spacy.py" 
 require_any_match "${PEAKS_OUTPUT_DIR}" "peak_*_term_frequencies.csv" "peak term frequency CSVs"
 
 run_step "7. Running peaks_to_clouds.py for ${TARGET_COUNTRY}" \
-#  python "${CM_DIR}/trend-analysis/py-scr/wordclouds/peaks_to_clouds.py"
+  python "${CM_DIR}/trend-analysis/py-scr/wordclouds/peaks_to_clouds.py"
 require_any_match "${RESEARCHER_OUTPUT_DIR}/${TARGET_COUNTRY}" "*_wordcloud.png" "wordcloud images"
 require_any_match "${RESEARCHER_OUTPUT_DIR}/${TARGET_COUNTRY}" "*_term-counts.xlsx" "word frequency workbooks"
 
 run_step "8. Running embed_data.py for ${TARGET_COUNTRY}" \
   cd "${CM_DIR}/semantic-mapping" && conda activate mapping-env && python -m py-scr.embed_data
-  #python "${CM_DIR}/semantic-mapping/py-scr/embed_data.py" 
 check_theme_outputs "${SEMANTIC_EMBEDDINGS_DIR}/${TARGET_COUNTRY}_" "_chunked.parquet"
 check_theme_outputs "${SEMANTIC_EMBEDDINGS_DIR}/${TARGET_COUNTRY}_" "_embeddings.npy"
 
